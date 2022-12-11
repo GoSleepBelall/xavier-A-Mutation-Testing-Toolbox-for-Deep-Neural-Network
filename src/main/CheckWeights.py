@@ -29,25 +29,36 @@ if __name__ == '__main__':
     model = tf.keras.models.load_model("/home/bilal/XAVIER/xavier/model.h5")
     model.summary()
     weight = np.asarray(GetWeights(model,  keras.layers.Conv2D, "conv2d"))
+    # Load Data
+    (train_X, train_y), (test_X, test_y) = mnist.load_data()
 
-    for x in weight:
-        for y in x:
-            print(y)
+    # Convert into Numpy Arrays
+    train_X = np.asarray(train_X)
+    train_y = np.asarray(train_y)
 
-    #SetWeights(model, keras.layers.Conv2D, "conv2d", weight, 2)
+    #Check Accuracy
+    model.evaluate(test_X, test_y)
 
-    #weight = GetWeights(model, keras.layers.Conv2D, "conv2d")
+    #Print Weights
+    # for x in weight:
+    #     for y in x:
+    #         print(y)
 
-    #for x in weight:
-    #    for y in x:
-    #        print(y)
+    #Change Weights with a factor (currently performing Sum)
+    #Paramater List
+    # - Model (imported or created)
+    # - Type of Layer to be manipulated
+    # - Name of Layer to be manipulated
+    # - Current Weight Array
+    # - Factor to be added
+    SetWeights(model, keras.layers.Conv2D, "conv2d", weight, 2)
+    print("weights of layer conv2d are increased with a factor of 2")
 
-    print()
-    print()
-    print()
-    print()
+    # Check Accuracy again
+    model.evaluate(test_X, test_y)
 
     print(weight[0][0][0])
 
+#Additional Information: (DO NOT REMOVE)
 # We can also import custom_objects while loading model as dictionary
 # For example if we have any loss function
