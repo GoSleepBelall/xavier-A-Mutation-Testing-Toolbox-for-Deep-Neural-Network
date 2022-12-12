@@ -23,6 +23,16 @@ def SetWeights(model, layertype, layerName,weight, factor):
                 layer.set_weights(weight+factor)
     return
 
+def SetParticularWeight(model, layertype, layerName):
+    weight = np.asarray(GetWeights(model, keras.layers.Conv2D, "conv2d"))
+    weight[0][0][0][0][0] = 500
+    for layer in model.layers:
+        # Check if its convolutional layer
+        if isinstance(layer, layertype):
+            if layer.name == layerName:
+                layer.set_weights(weight)
+    return
+
 
 if __name__ == '__main__':
 
@@ -56,6 +66,9 @@ if __name__ == '__main__':
 
     # Check Accuracy again
     model.evaluate(test_X, test_y)
+
+    # SetParticularWeight(model, keras.layers.Conv2D, "conv2d")
+    #model.evaluate(test_X, test_y)
 
     print(weight[0][0][0])
 
