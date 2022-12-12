@@ -33,10 +33,28 @@ def SetParticularWeight(model, layertype, layerName):
                 layer.set_weights(weight)
     return
 
+def find_sameshape_layer(model):
+    """
+    find the layers which can be deleted or duplicated
+    :param model: model used
+    :return: layer list
+    """
+    candidate_layer_list = []
+    layer_num = len(model.layers)
+    # has hidden layers?
+    if layer_num > 2:
+        for layer_index in range(layer_num):
+            # pass input and output layers
+            if layer_index == 0 or layer_index == (layer_num - 1):
+                continue
+            # last layer's output shape = next layer's input shape
+            if model.layers[layer_index].output_shape == model.layers[layer_index].input_shape:
+                candidate_layer_list.append(model.layers[layer_index].name)
+    return candidate_layer_list
 
 if __name__ == '__main__':
 
-    model = tf.keras.models.load_model("/home/bilal/XAVIER/xavier/model.h5")
+    model = tf.keras.models.load_model("/home/saad/FYP/xavier/model.h5")
     model.summary()
     weight = np.asarray(GetWeights(model,  keras.layers.Conv2D, "conv2d"))
     # Load Data
