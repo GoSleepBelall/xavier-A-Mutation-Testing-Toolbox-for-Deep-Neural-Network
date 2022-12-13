@@ -6,6 +6,13 @@ from tensorflow import keras
 from keras.utils import np_utils
 
 
+"""
+Function to get Weights from a model 
+Parameters:
+model: that is loaded from .h5 file
+layertype: layer type can be convolutional or pooling
+layername: temporary argument, more generic logic would be by index 
+"""
 def GetWeights(model, layertype, layerName):
     weight = np.array([])
     for layer in model.layers:
@@ -15,6 +22,15 @@ def GetWeights(model, layertype, layerName):
                 weights = np.array(layer.get_weights())
     return weights
 
+"""
+Function to Set Weights of a model 
+Parameters:
+model: that is loaded from .h5 file
+layertype: layer type can be convolutional or pooling
+layername: temporary argument, more generic logic would be by index 
+weight: The weights array
+factor: temporary argument for increment, more generic logic would be to perform operation externally
+"""
 def SetWeights(model, layertype, layerName,weight, factor):
     for layer in model.layers:
         # Check if its convolutional layer
@@ -22,6 +38,24 @@ def SetWeights(model, layertype, layerName,weight, factor):
             if layer.name == layerName:
                 layer.set_weights(weight+factor)
     return
+"""
+Function to Get weights of a specific kernel
+Parameters:
+kernel: The index of desired kernel 
+"""
+def getKernelWeights(kernel):
+    kernel_weights = []
+    row = 0
+    while row < 5:
+        kernel_weights.append([])
+        column = 0
+        while column < 5:
+            num = weight[bias][row][column][0][kernel]
+            kernel_weights[row].append(num)
+            column = column + 1
+        row = row + 1
+
+    return kernel_weights
 
 def SetParticularWeight(model, layertype, layerName):
     weight = np.asarray(GetWeights(model, keras.layers.Conv2D, "conv2d"))
