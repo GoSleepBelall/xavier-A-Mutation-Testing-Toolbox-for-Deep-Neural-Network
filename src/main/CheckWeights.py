@@ -50,7 +50,7 @@ def getKernelWeights(kernel):
         kernel_weights.append([])
         column = 0
         while column < 5:
-            num = weight[bias][row][column][0][kernel]
+            num = weight[0][row][column][0][kernel]
             kernel_weights[row].append(num)
             column = column + 1
         row = row + 1
