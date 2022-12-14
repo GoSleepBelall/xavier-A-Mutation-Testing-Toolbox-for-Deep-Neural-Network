@@ -1,6 +1,6 @@
 import numpy as np
 
-class Weights:
+class WeightUtils:
     """
     Function to get Weights from a model
     Parameters:

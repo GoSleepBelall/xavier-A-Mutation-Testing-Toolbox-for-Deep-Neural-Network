@@ -1,9 +1,9 @@
-from MutationOperators import NeuronLevel
+from mutation_operators import NeuronLevel
 from visualizer import VisualKeras
-import Predictions_analysis as pa
-from Create_model import Lenet5_generator
-from CheckWeights import Weights
-from CheckWeights import Model_layers
+import predictions_analysis as pa
+from models_generator import Lenet5Generator
+from operator_utils import WeightUtils
+from operator_utils import Model_layers
 import tensorflow as tf
 from tensorflow.keras.datasets import mnist
 from tensorflow import keras
@@ -22,7 +22,7 @@ if __name__ == '__main__':
     model.summary()
 
     #Create Objects
-    weights = Weights()
+    weights = WeightUtils()
     operator = NeuronLevel()
     VK = VisualKeras()
     VK.visualize_model_using_vk(model)

@@ -1,9 +1,9 @@
 from tensorflow import keras
-from CheckWeights import Weights
+from operator_utils import WeightUtils
 
 class NeuronLevel:
     # Composition
-    weights = Weights()
+    weights = WeightUtils()
 
     def changeNeuron(self, model, row, column, kernel, value):
         trainable_weights = self.weights.GetWeights(model, keras.layers.Conv2D, "conv2d")

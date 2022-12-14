@@ -12,7 +12,7 @@ import time
 
 
 
-class Lenet5_generator:
+class Lenet5Generator:
     """
     This class will create a LENET-5model, train it on MNIST and save it files as xavier-lenet5.h5
     """
@@ -58,7 +58,7 @@ class Lenet5_generator:
         model.save("../models/xavier-lenet5.h5")
         print("xavier-lenet5 saved successfully")
 
-class alexnet_generator:
+class AlexNetGenerator:
     """
     This class will create an ALEXNET-model, train it on cifar10 and save it files as xavier-alexnet.h5
     """
