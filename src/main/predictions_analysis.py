@@ -1,4 +1,4 @@
-from CheckWeights import Weights
+from operator_utils import WeightUtils
 import tensorflow as tf
 from tensorflow.keras.datasets import mnist
 from tensorflow import keras
