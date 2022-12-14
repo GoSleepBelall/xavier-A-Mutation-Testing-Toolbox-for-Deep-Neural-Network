@@ -1,4 +1,5 @@
 from MutationOperators import NeuronLevel
+from visualizer import VisualKeras
 import Predictions_analysis as pa
 from Create_model import Lenet5_generator
 from CheckWeights import Weights
@@ -23,6 +24,8 @@ if __name__ == '__main__':
     #Create Objects
     weights = Weights()
     operator = NeuronLevel()
+    VK = VisualKeras()
+    VK.visualize_model_using_vk(model)
 
     # Get all trainable weights from model
     trainable_weights = np.asarray(weights.GetWeights(model, keras.layers.Conv2D, "conv2d"))
