@@ -1,5 +1,6 @@
 import Create_model
 import CheckWeights
+import Predictions_analysis as pa
 from Create_model import Lenet5_generator
 from CheckWeights import Weights
 from CheckWeights import Model_layers
@@ -23,19 +24,29 @@ if __name__ == '__main__':
     #Create Objects
     weights = Weights()
 
-
     # Get all trainable weights from model
     trainable_weights = np.asarray(weights.GetWeights(model, keras.layers.Conv2D, "conv2d"))
 
     # Load Dataset
     (train_X, train_y), (test_X, test_y) = mnist.load_data()
-
-
     # Convert into Numpy Arrays
     train_X = np.asarray(train_X)
     train_y = np.asarray(train_y)
 
+
     model.evaluate(test_X, test_y)
+
+    #Generate Classification report of Original Model
+    prediction = model.predict(test_X)
+    pa.generate_classification_report(prediction, test_y)
+
+
+
+
+
+
+
+
 
     # Change Weights with a factor (currently performing Sum)
     # Paramater List
@@ -44,10 +55,10 @@ if __name__ == '__main__':
     # - Name of Layer to be manipulated
     # - Current Weight Array
     # - Factor to be added
-    weights.SetWeights(model, keras.layers.Conv2D, "conv2d", trainable_weights)
+    #weights.SetWeights(model, keras.layers.Conv2D, "conv2d", trainable_weights)
 
     # Check Accuracy again
-    model.evaluate(test_X, test_y)
+    #model.evaluate(test_X, test_y)
 
 
 
