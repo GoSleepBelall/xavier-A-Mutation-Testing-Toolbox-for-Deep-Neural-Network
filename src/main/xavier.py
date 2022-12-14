@@ -1,4 +1,58 @@
-if __name__ == '__main__':
+import Create_model
+import CheckWeights
+from Create_model import Lenet5_generator
+from CheckWeights import Weights
+from CheckWeights import Model_layers
+import tensorflow as tf
+from tensorflow.keras.datasets import mnist
+from tensorflow import keras
+import numpy as np
 
+
+if __name__ == '__main__':
+    """ Playground """
+    #Lenet5_generator = Lenet5_generator()
+    #Lenet5_generator.generate_model()
+
+    """Functionality"""
     print('Xavier started.')
+    #Load Model
+    model = tf.keras.models.load_model("../models/model.h5")
+    model.summary()
+
+    #Create Objects
+    weights = Weights()
+
+
+    # Get all trainable weights from model
+    trainable_weights = np.asarray(weights.GetWeights(model, keras.layers.Conv2D, "conv2d"))
+
+    # Load Dataset
+    (train_X, train_y), (test_X, test_y) = mnist.load_data()
+
+
+    # Convert into Numpy Arrays
+    train_X = np.asarray(train_X)
+    train_y = np.asarray(train_y)
+
+    model.evaluate(test_X, test_y)
+
+    # Change Weights with a factor (currently performing Sum)
+    # Paramater List
+    # - Model (imported or created)
+    # - Type of Layer to be manipulated
+    # - Name of Layer to be manipulated
+    # - Current Weight Array
+    # - Factor to be added
+    weights.SetWeights(model, keras.layers.Conv2D, "conv2d", trainable_weights)
+
+    # Check Accuracy again
+    model.evaluate(test_X, test_y)
+
+
+
+
     print('Xavier ended.')
+
+    #Do not remove the terminator
+    #"""
