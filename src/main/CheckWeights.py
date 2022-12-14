@@ -1,9 +1,4 @@
-import tensorflow as tf
 import numpy as np
-from tensorflow.keras.datasets import mnist
-from tensorflow import keras
-from tensorflow.keras import models
-from tensorflow.keras import layers
 
 class Weights:
     """
@@ -11,10 +6,10 @@ class Weights:
     Parameters:
     model: that is loaded from .h5 file
     layertype: layer type can be convolutional or pooling
-    layername: temporary argument, more generic logic would be by index
+    layerName: temporary argument, more generic logic would be by index of layer
     """
     def GetWeights(self, model, layertype, layerName):
-        weight = np.array([])
+        trainable_weights = np.array([])
         for layer in model.layers:
             # Check if its convolutional layer
             if isinstance(layer, layertype):
@@ -57,15 +52,6 @@ class Weights:
 
         return kernel_weights
 
-    def SetParticularWeight(self, model, layertype, layerName):
-        weight = np.asarray(GetWeights(model, keras.layers.Conv2D, "conv2d"))
-        weight[0][0][0][0][0] = 500
-        for layer in model.layers:
-            # Check if its convolutional layer
-            if isinstance(layer, layertype):
-                if layer.name == layerName:
-                    layer.set_weights(weight)
-        return
 
 class Model_layers:
     def find_sameshape_layer(self, model):

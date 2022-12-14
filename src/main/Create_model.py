@@ -52,4 +52,6 @@ class Lenet5_generator:
 
         #We already have a working model, so it is commented for the time being
         model.save("../models/xavier-lenet5.h5")
+        print("xavier-lenet5 saved successfully")
+
 
