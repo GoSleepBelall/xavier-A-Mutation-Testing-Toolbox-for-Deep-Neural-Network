@@ -27,7 +27,7 @@ if __name__ == '__main__':
     operator = NeuronLevel()
     VK = VisualKeras()
     VK.visualize_model_using_vk(model)
-
+    print(layers.getKernelNumbers(model, "conv2d"))
     # Get all trainable weights from model
     trainable_weights = np.asarray(weights.GetWeights(model, "conv2d"))
     np.shape(trainable_weights)
@@ -54,14 +54,15 @@ if __name__ == '__main__':
     column = 3
     kernel = 0
     value = 0
+    layerName = "conv2d"
 
     #Un comment Neuron Here
-    #operator.changeNeuron(model,row,column, kernel, value)
-    operator.additive_inverse(model,row,column, kernel)
-    #operator.mul_inverse(model,row,column, kernel)
-    #operator.invertNeuron(model,row,column, kernel)
-    #operator.blockNeuron(model,row,column, kernel)
-    #operator.changeNeuron(model,row,column, kernel)
+    #operator.changeNeuron(model,layerName, row,column, kernel, value)
+    operator.additive_inverse(model,layerName, row,column, kernel)
+    #operator.mul_inverse(model,layerName, row,column, kernel)
+    #operator.invertNeuron(model,layerName, row,column, kernel)
+    #operator.blockNeuron(model,layerName, row,column, kernel)
+    #operator.changeNeuron(model,layerName, row,column, kernel)
 
     # Predict again with the model
     prediction = model.predict(test_X)
