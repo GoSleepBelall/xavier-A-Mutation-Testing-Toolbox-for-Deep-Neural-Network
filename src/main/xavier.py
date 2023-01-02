@@ -22,13 +22,15 @@ if __name__ == '__main__':
     model.summary()
 
     #Create Objects
+    layers = Model_layers()
     weights = WeightUtils()
     operator = NeuronLevel()
     VK = VisualKeras()
     VK.visualize_model_using_vk(model)
 
     # Get all trainable weights from model
-    trainable_weights = np.asarray(weights.GetWeights(model, keras.layers.Conv2D, "conv2d"))
+    trainable_weights = np.asarray(weights.GetWeights(model, "conv2d"))
+    np.shape(trainable_weights)
 
     # Load Dataset
     (train_X, train_y), (test_X, test_y) = mnist.load_data()
@@ -55,9 +57,9 @@ if __name__ == '__main__':
 
     #Un comment Neuron Here
     #operator.changeNeuron(model,row,column, kernel, value)
-    #operator.additive_inverse(model,row,column, kernel)
+    operator.additive_inverse(model,row,column, kernel)
     #operator.mul_inverse(model,row,column, kernel)
-    operator.invertNeuron(model,row,column, kernel)
+    #operator.invertNeuron(model,row,column, kernel)
     #operator.blockNeuron(model,row,column, kernel)
     #operator.changeNeuron(model,row,column, kernel)
 

@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class WeightUtils:
     """
     Function to get Weights from a model
@@ -8,13 +9,12 @@ class WeightUtils:
     layertype: layer type can be convolutional or pooling
     layerName: temporary argument, more generic logic would be by index of layer
     """
-    def GetWeights(self, model, layertype, layerName):
+
+    def GetWeights(self, model, layerName):
         trainable_weights = np.array([])
         for layer in model.layers:
-            # Check if its convolutional layer
-            if isinstance(layer, layertype):
-                if layer.name == layerName:
-                    trainable_weights = np.array(layer.get_weights())
+            if layer.name == layerName:
+                trainable_weights = np.array(layer.get_weights(), dtype=object)
         return trainable_weights
 
     """
@@ -25,19 +25,20 @@ class WeightUtils:
     layername: temporary argument, more generic logic would be by index 
     weight: The manipulated weights array
     """
-    def SetWeights(self, model, layertype, layerName,trainable_weights):
+
+    def SetWeights(self, model, layerName, trainable_weights):
         for layer in model.layers:
-            # Check if its convolutional layer
-            if isinstance(layer, layertype):
-                if layer.name == layerName:
-                    layer.set_weights(trainable_weights)
+            if layer.name == layerName:
+                layer.set_weights(trainable_weights)
         return
+
     """
     Function to Get weights of a specific kernel
     Parameters:
     trainable_weights: all trainable weights of a model 
     kernel: The index of desired kernel 
     """
+
     def getKernelWeights(self, trainable_weights, kernel):
         kernel_weights = []
         row = 0
@@ -73,10 +74,19 @@ class Model_layers:
                     candidate_layer_list.append(model.layers[layer_index].name)
         return candidate_layer_list
 
-"""
+    def getLayerNames(self, model):
+        i = model.layers.__len__()
+        j = 0
+        layer_names = []
+        while j<i:
+            layer_names.append(model.layers[j].name)
+            j=j+1
+        return layer_names
 
+
+
+"""
 Additional Information: (DO NOT REMOVE)
 We can also import custom_objects while loading model as dictionary
 for example: if we have any external loss function
-
 """
