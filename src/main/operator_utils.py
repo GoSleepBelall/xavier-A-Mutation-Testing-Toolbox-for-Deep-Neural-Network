@@ -83,6 +83,11 @@ class Model_layers:
             j=j+1
         return layer_names
 
+    def getKernelNumbers(self, model, layerName):
+        for layer in model.layers:
+            if layer.name == layerName:
+                return layer.filters
+
 
 
 """
