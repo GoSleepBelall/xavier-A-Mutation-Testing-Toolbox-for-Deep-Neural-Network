@@ -2,13 +2,20 @@ from typing import Union
 from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi import Response
+import sys
+import os
+
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "main")))
 
 import json
 import tensorflow as tf
 
-from src.main.mutation_operators import NeuronLevel
-from src.main.operator_utils import WeightUtils
-from src.main.operator_utils import Model_layers
+from mutation_operators import NeuronLevel
+from operator_utils import WeightUtils
+from operator_utils import Model_layers
+
+import sys
 
 
 

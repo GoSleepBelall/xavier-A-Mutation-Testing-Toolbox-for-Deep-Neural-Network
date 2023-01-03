@@ -10,6 +10,7 @@ from tensorflow import keras
 import numpy as np
 
 
+
 if __name__ == '__main__':
     """ Playground """
     #Lenet5_generator = Lenet5_generator()

@@ -1,5 +1,5 @@
 from tensorflow import keras
-from src.main.operator_utils import WeightUtils
+from operator_utils import WeightUtils
 
 class NeuronLevel:
     # Composition
