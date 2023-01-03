@@ -75,12 +75,9 @@ class Model_layers:
         return candidate_layer_list
 
     def getLayerNames(self, model):
-        i = model.layers.__len__()
-        j = 0
         layer_names = []
-        while j<i:
-            layer_names.append(model.layers[j].name)
-            j=j+1
+        for layer in model.layers:
+            layer_names.append(layer.name)
         return layer_names
 
     def getKernelNumbers(self, model, layerName):
@@ -88,6 +85,12 @@ class Model_layers:
             if layer.name == layerName:
                 return layer.filters
 
+    def getNeuronLayers(self, model):
+        layer_names = []
+        for layer in model.layers:
+            if hasattr(layer, 'trainable_weights') and len(layer.trainable_weights) > 0:
+                layer_names.append(layer.name)
+        return layer_names
 
 
 """
