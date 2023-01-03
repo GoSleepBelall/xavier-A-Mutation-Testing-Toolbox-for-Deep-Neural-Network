@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from fastapi import Response
 import sys
 import os
-
+import json_tricks as jt
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "main")))
 
@@ -33,13 +33,14 @@ alexnet = tf.keras.models.load_model("../../models/xavier-lenet5.h5")       #TOD
 # GET request to retrieve all the trainable weights of a particular layer in a specific model
 @app.get("/weights/{model}/{layerName}")
 def get_weights(model: str, layerName: str):
+    model_obj = None
     if model == "1":
-        model = lenet5
+        model_obj = lenet5
     elif model == "2":
-        model = alexnet
-    trainable_weights = weights.GetWeights(model, layerName)
-    print(trainable_weights)
-    return json.dumps(trainable_weights)
+        model_obj = alexnet
+    trainable_weights = weights.GetWeights(model_obj, layerName)
+    result = trainable_weights.tolist()
+    return jt.dumps(result)
 
 
 # GET request to retrieve all the layers in a specific model
@@ -62,7 +63,7 @@ def getKernelWeights(model: str, layerName: str, kernel: int):
         model = alexnet
     trainable_weights = weights.GetWeights(model, layerName)
     kernel_weights = weights.getKernelWeights(trainable_weights, kernel)
-    return json.dumps(kernel_weights)
+    return jt.dumps(kernel_weights)
 
 # GET request to retrieve number of kernels present in a layer
 @app.get("/kernel/{model}/{layerName}")
@@ -81,7 +82,7 @@ def getMutationOperatorsList(operatortype: int):
 @app.get("/operators-description/{type}")
 def getMutationOperatorsDescription(operatortype: int):
     if operatortype == 1:
-        return json.dumps(NeuronLevel.neuronLevelMutationOperatorsDescription)
+        return jt.dumps(NeuronLevel.neuronLevelMutationOperatorsDescription)
     #TODO: add other type of mutation operators when done
 
 
@@ -176,14 +177,3 @@ def mutation_operator(index: int, model: str, layerName: str, row: int, column: 
 
     response.status_code = 200
     return {"message": "Mutation operator successfully applied", "result": result}
-
-
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
-
-
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: Union[str, None] = None):
-    return {"item_id": item_id, "q": q}
-
