@@ -5,70 +5,105 @@ from fastapi import Response
 import sys
 import os
 import json_tricks as jt
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "main")))
-
 import json
-import tensorflow as tf
-
+from tensorflow import keras
+from keras import models
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "main")))
 from mutation_operators import NeuronLevel
 from operator_utils import WeightUtils
 from operator_utils import Model_layers
 
-import sys
+
 
 
 
 app = FastAPI()
 layers = Model_layers()
 weights = WeightUtils()
+operator = NeuronLevel()
 
 
 # Read the models globally
 
-lenet5 = tf.keras.models.load_model("../../models/xavier-lenet5.h5")
-alexnet = tf.keras.models.load_model("../../models/xavier-lenet5.h5")       #TODO: this is still reading lenet-5 because i dont have alexnet right now
+lenet5 = models.load_model("../../models/xavier-lenet5.h5")
+alexnet = models.load_model("../../models/xavier-lenet5.h5")       #TODO: this is still reading lenet-5 because i dont have alexnet right now
 
+
+# A global dictionary mapping model names to model objects
+model_dict = {
+    'Lenet5': lenet5,
+    'Alexnet': alexnet
+}
 
 # GET request to retrieve all the trainable weights of a particular layer in a specific model
-@app.get("/weights/{model}/{layerName}")
-def get_weights(model: str, layerName: str):
-    model_obj = None
-    if model == "1":
-        model_obj = lenet5
-    elif model == "2":
-        model_obj = alexnet
+@app.get("/weights/{modelId}/{layerName}")
+def get_weights(modelId: str, layerName: str):
+    # Get the model object from the dictionary
+    model_var = model_dict.get(modelId)
+
+    # Create a deep copy of the model
+    model_obj = models.clone_model(model_var)
+    model_obj.set_weights(model_var.get_weights())
     trainable_weights = weights.GetWeights(model_obj, layerName)
+
     result = trainable_weights.tolist()
     return jt.dumps(result)
 
 
 # GET request to retrieve all the layers in a specific model
-@app.get("/layers/{model}")
-def get_layers(model: str):
-    if model == "1":
-        model = lenet5
-    elif model == "2":
-        model = alexnet
-    layer_names = layers.getLayerNames(model)
+@app.get("/layers/{modelId}")
+def get_layers(modelId: str):
+    # Get the model object from the dictionary
+    model_var = model_dict.get(modelId)
+
+    # Create a deep copy of the model
+    model_obj = models.clone_model(model_var)
+    model_obj.set_weights(model_var.get_weights())
+
+    layer_names = layers.getLayerNames(model_obj)
+    return json.dumps(layer_names)
+
+# GET request to retrieve all the layers on which Neuron level Mutation Operators are applicable
+@app.get("/neuron_layers/{modelId}")
+def get_neuron_layers(modelId: str):
+    # Get the model object from the dictionary
+    model_var = model_dict.get(modelId)
+
+    # Create a deep copy of the model
+    model_obj = models.clone_model(model_var)
+    model_obj.set_weights(model_var.get_weights())
+
+    layer_names = layers.getNeuronLayers(model_obj)
     return json.dumps(layer_names)
 
 
 # GET request to retrieve all the weights of a specific kernel in a specific layer of a specific model
-@app.get("/weights/{model}/{layerName}/{kernel}")
-def getKernelWeights(model: str, layerName: str, kernel: int):
-    if model == "1":
-        model = lenet5
-    elif model == "2":
-        model = alexnet
-    trainable_weights = weights.GetWeights(model, layerName)
+@app.get("/weights/{modelId}/{layerName}/{kernel}")
+def getKernelWeights(modelId: str, layerName: str, kernel: int):
+    # Get the model object from the dictionary
+    model_var = model_dict.get(modelId)
+
+    # Create a deep copy of the model
+    model_obj = models.clone_model(model_var)
+    model_obj.set_weights(model_var.get_weights())
+    # Get Trainable Weights
+    trainable_weights = weights.GetWeights(model_obj, layerName)
+
+    # Get Kernel wise weights from all weights
     kernel_weights = weights.getKernelWeights(trainable_weights, kernel)
     return jt.dumps(kernel_weights)
 
 # GET request to retrieve number of kernels present in a layer
-@app.get("/kernel/{model}/{layerName}")
-def getKernelNum(model: str, layerName: str):
-    return json.dumps(layers.getKernelNumbers(model, layerName))
+@app.get("/kernel/{modelId}/{layerName}")
+def getKernelNum(modelId: str, layerName: str):
+    # Get the model object from the dictionary
+    model_var = model_dict.get(modelId)
+
+    # Create a deep copy of the model
+    model_obj = models.clone_model(model_var)
+    model_obj.set_weights(model_var.get_weights())
+
+    return json.dumps(layers.getKernelNumbers(model_obj, layerName))
 
 # GET request to retrieve List of Mutation Operators present
 @app.get("/operators-list/{operatortype}")
@@ -87,65 +122,80 @@ def getMutationOperatorsDescription(operatortype: int):
 
 
 # PUT request to change neuron value using Change Neuron Mutation Operator
-@app.put("/change-neuron/{model}/{layerName}/{row}/{column}/{kernel}/{value}")
-def change_neuron(model: str, layerName: str, row: int, column: int, kernel: int, value: float, response: Response):
-    model_obj = None
-    if model == "1":
-        model_obj = lenet5
-    elif model == "2":
-        model_obj = alexnet
+@app.put("/change-neuron/{modelId}/{layerName}/{row}/{column}/{kernel}/{value}")
+def change_neuron(modelId: str, layerName: str, row: int, column: int, kernel: int, value: float, response: Response):
+    # Get the model object from the dictionary
+    model_var = model_dict.get(modelId)
+
+    # Create a deep copy of the model
+    model_obj = models.clone_model(model_var)
+    model_obj.set_weights(model_var.get_weights())
     try:
-        NeuronLevel.changeNeuron(model_obj, layerName, row, column, kernel, value)
+        operator.changeNeuron(model_obj, layerName, row, column, kernel, value)
         response.status_code = 200
         return {"message": "Neuron value successfully changed"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 # PUT request to block neuron value using Block Neuron Mutation Operator
-@app.put("/block-neuron/{model}/{layerName}/{row}/{column}/{kernel}")
-def block_neuron(model: str, layerName: str, row: int, column: int, kernel: int, response: Response):
-    model_obj = None
-    if model == "1":
-        model_obj = lenet5
-    elif model == "2":
-        model_obj = alexnet
+@app.put("/block-neuron/{modelId}/{layerName}/{row}/{column}/{kernel}")
+def block_neuron(modelId: str, layerName: str, row: int, column: int, kernel: int, response: Response):
+    # Get the model object from the dictionary
+    model_var = model_dict.get(modelId)
+
+    # Create a deep copy of the model
+    model_obj = models.clone_model(model_var)
+    model_obj.set_weights(model_var.get_weights())
     try:
-        NeuronLevel.blockNeuron(model_obj, layerName, row, column, kernel)
+        operator.blockNeuron(model_obj, layerName, row, column, kernel)
         response.status_code = 200
         return {"message": "Neuron successfully blocked"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 # PUT request to change neuron value with its multiplicative inverse
-@app.put("/mul-inverse/{model}/{layerName}/{row}/{column}/{kernel}")
-def mul_inverse_neuron(model: str, layerName: str, row: int, column: int, kernel: int, response: Response):
-    model_obj = None
-    if model == "1":
-        model_obj = lenet5
-    elif model == "2":
-        model_obj = alexnet
+@app.put("/mul-inverse/{modelId}/{layerName}/{row}/{column}/{kernel}")
+def mul_inverse_neuron(modelId: str, layerName: str, row: int, column: int, kernel: int, response: Response):
+    # Get the model object from the dictionary
+    model_var = model_dict.get(modelId)
+
+    # Create a deep copy of the model
+    model_obj = models.clone_model(model_var)
+    model_obj.set_weights(model_var.get_weights())
     try:
-        NeuronLevel.mul_inverse(model_obj, layerName, row, column, kernel)
+        operator.mul_inverse(model_obj, layerName, row, column, kernel)
         response.status_code = 200
         return {"message": "Neuron value successfully changed to multiplicative inverse"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 # PUT request to replace neuron with its Additive Inverse
-@app.put("/additive-inverse/{model}/{layerName}/{row}/{column}/{kernel}")
-def additive_inverse_neuron(model: str, layerName: str, row: int, column: int, kernel: int, response: Response):
+@app.put("/additive-inverse/{modelId}/{layerName}/{row}/{column}/{kernel}")
+def additive_inverse_neuron(modelId: str, layerName: str, row: int, column: int, kernel: int, response: Response):
+    # Get the model object from the dictionary
+    model_var = model_dict.get(modelId)
+
+    # Create a deep copy of the model
+    model_obj = models.clone_model(model_var)
+    model_obj.set_weights(model_var.get_weights())
     try:
-        NeuronLevel.additive_inverse(model, layerName, row, column, kernel)
+        operator.additive_inverse(model_obj, layerName, row, column, kernel)
         response.status_code = 200
         return {"message": "Neuron value successfully changed to additive inverse"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 # PUT request to invert the value of neuron using Invert Neuron Mutation Operator
-@app.put("/invert-neuron/{model}/{layerName}/{row}/{column}/{kernel}")
-def invert_neuron(model: str, layerName: str, row: int, column: int, kernel: int, response: Response):
+@app.put("/invert-neuron/{modelId}/{layerName}/{row}/{column}/{kernel}")
+def invert_neuron(modelId: str, layerName: str, row: int, column: int, kernel: int, response: Response):
+    # Get the model object from the dictionary
+    model_var = model_dict.get(modelId)
+
+    # Create a deep copy of the model
+    model_obj = models.clone_model(model_var)
+    model_obj.set_weights(model_var.get_weights())
     try:
-        NeuronLevel.invertNeuron(model, layerName, row, column, kernel)
+        operator.invertNeuron(model_obj, layerName, row, column, kernel)
         response.status_code = 200
         return {"message": "Neuron value successfully inverted"}
     except Exception as e:
@@ -153,24 +203,19 @@ def invert_neuron(model: str, layerName: str, row: int, column: int, kernel: int
 
 
 # Index based PUT request for Mutation Operators
-@app.put("/mutation-operator/{index}/{model}/{layerName}/{row}/{column}/{kernel}/{value}")
-def mutation_operator(index: int, model: str, layerName: str, row: int, column: int, kernel: int, response: Response, value: Union[float, None] = None):
-    model_obj = None
-    if model == "1":
-        model_obj = lenet5
-    elif model == "2":
-        model_obj = alexnet
+@app.put("/mutation-operator/{index}/{modelId}/{layerName}/{row}/{column}/{kernel}/{value}")
+def mutation_operator(index: int, modelId: str, layerName: str, row: int, column: int, kernel: int, response: Response, value: Union[float, None] = None):
 
     if index == 1:
-        result = change_neuron(model_obj, layerName, row, column, kernel, value)
+        result = change_neuron(modelId, layerName, row, column, kernel, value)
     elif index == 2:
-        result = block_neuron(model_obj, layerName, row, column, kernel)
+        result = block_neuron(modelId, layerName, row, column, kernel)
     elif index == 3:
-        result = mul_inverse_neuron(model_obj, layerName, row, column, kernel)
+        result = mul_inverse_neuron(modelId, layerName, row, column, kernel)
     elif index == 4:
-        result = additive_inverse_neuron(model_obj, layerName, row, column, kernel)
+        result = additive_inverse_neuron(modelId, layerName, row, column, kernel)
     elif index == 5:
-        result = invert_neuron(model_obj, layerName, row, column, kernel)
+        result = invert_neuron(modelId, layerName, row, column, kernel)
     else:
         # If the index is not recognized, return an error message
         raise HTTPException(status_code=400, detail="Invalid Mutation Operator index")
