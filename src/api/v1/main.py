@@ -8,25 +8,22 @@ import json_tricks as jt
 import json
 from tensorflow import keras
 from keras import models
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "main")))
 from mutation_operators import NeuronLevel
 from operator_utils import WeightUtils
 from operator_utils import Model_layers
-
-
-
-
 
 app = FastAPI()
 layers = Model_layers()
 weights = WeightUtils()
 operator = NeuronLevel()
 
-
 # Read the models globally
 
 lenet5 = models.load_model("../../models/xavier-lenet5.h5")
-alexnet = models.load_model("../../models/xavier-lenet5.h5")       #TODO: this is still reading lenet-5 because i dont have alexnet right now
+alexnet = models.load_model("../../models/xavier-lenet5.h5")
+# TODO: this is still reading lenet-5 because i dont have alexnet right now
 
 
 # A global dictionary mapping model names to model objects
@@ -34,6 +31,7 @@ model_dict = {
     'Lenet5': lenet5,
     'Alexnet': alexnet
 }
+
 
 # GET request to retrieve all the trainable weights of a particular layer in a specific model
 @app.get("/weights/{modelId}/{layerName}")
@@ -62,6 +60,7 @@ def get_layers(modelId: str):
 
     layer_names = layers.getLayerNames(model_obj)
     return json.dumps(layer_names)
+
 
 # GET request to retrieve all the layers on which Neuron level Mutation Operators are applicable
 @app.get("/neuron_layers/{modelId}")
@@ -93,6 +92,7 @@ def getKernelWeights(modelId: str, layerName: str, kernel: int):
     kernel_weights = weights.getKernelWeights(trainable_weights, kernel)
     return jt.dumps(kernel_weights)
 
+
 # GET request to retrieve number of kernels present in a layer
 @app.get("/kernel/{modelId}/{layerName}")
 def getKernelNum(modelId: str, layerName: str):
@@ -105,12 +105,13 @@ def getKernelNum(modelId: str, layerName: str):
 
     return json.dumps(layers.getKernelNumbers(model_obj, layerName))
 
+
 # GET request to retrieve List of Mutation Operators present
 @app.get("/operators-list/{operatortype}")
 def getMutationOperatorsList(operatortype: int):
     if operatortype == 1:
         return json.dumps(NeuronLevel.neuronLevelMutationOperatorslist)
-    #TODO: add other type of mutation operators when done
+    # TODO: add other type of mutation operators when done
 
 
 # GET request to retrieve Description of Mutation Operators present
@@ -118,12 +119,13 @@ def getMutationOperatorsList(operatortype: int):
 def getMutationOperatorsDescription(operatortype: int):
     if operatortype == 1:
         return jt.dumps(NeuronLevel.neuronLevelMutationOperatorsDescription)
-    #TODO: add other type of mutation operators when done
+    # TODO: add other type of mutation operators when done
 
 
 # PUT request to change neuron value using Change Neuron Mutation Operator
 @app.put("/change-neuron/{modelId}/{layerName}/{row}/{column}/{kernel}/{value}")
-def change_neuron(modelId: str, layerName: str, row: int, column: int, kernel: int, value: float, response: Response):
+def change_neuron(modelId: str, layerName: str, row: int, column: int, kernel: int, value: Union[float,None],
+                  response: Response):
     # Get the model object from the dictionary
     model_var = model_dict.get(modelId)
 
@@ -136,6 +138,7 @@ def change_neuron(modelId: str, layerName: str, row: int, column: int, kernel: i
         return {"message": "Neuron value successfully changed"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # PUT request to block neuron value using Block Neuron Mutation Operator
 @app.put("/block-neuron/{modelId}/{layerName}/{row}/{column}/{kernel}")
@@ -153,6 +156,7 @@ def block_neuron(modelId: str, layerName: str, row: int, column: int, kernel: in
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # PUT request to change neuron value with its multiplicative inverse
 @app.put("/mul-inverse/{modelId}/{layerName}/{row}/{column}/{kernel}")
 def mul_inverse_neuron(modelId: str, layerName: str, row: int, column: int, kernel: int, response: Response):
@@ -169,6 +173,7 @@ def mul_inverse_neuron(modelId: str, layerName: str, row: int, column: int, kern
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # PUT request to replace neuron with its Additive Inverse
 @app.put("/additive-inverse/{modelId}/{layerName}/{row}/{column}/{kernel}")
 def additive_inverse_neuron(modelId: str, layerName: str, row: int, column: int, kernel: int, response: Response):
@@ -184,6 +189,7 @@ def additive_inverse_neuron(modelId: str, layerName: str, row: int, column: int,
         return {"message": "Neuron value successfully changed to additive inverse"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # PUT request to invert the value of neuron using Invert Neuron Mutation Operator
 @app.put("/invert-neuron/{modelId}/{layerName}/{row}/{column}/{kernel}")
@@ -204,18 +210,18 @@ def invert_neuron(modelId: str, layerName: str, row: int, column: int, kernel: i
 
 # Index based PUT request for Mutation Operators
 @app.put("/mutation-operator/{index}/{modelId}/{layerName}/{row}/{column}/{kernel}/{value}")
-def mutation_operator(index: int, modelId: str, layerName: str, row: int, column: int, kernel: int, response: Response, value: Union[float, None] = None):
-
+def mutation_operator(index: int, modelId: str, layerName: str, row: int, column: int, kernel: int, response: Response,
+                      value: Union[float, None] = None):
     if index == 1:
-        result = change_neuron(modelId, layerName, row, column, kernel, value)
+        result = change_neuron(modelId, layerName, row, column, kernel, value, response)
     elif index == 2:
-        result = block_neuron(modelId, layerName, row, column, kernel)
+        result = block_neuron(modelId, layerName, row, column, kernel, response)
     elif index == 3:
-        result = mul_inverse_neuron(modelId, layerName, row, column, kernel)
+        result = mul_inverse_neuron(modelId, layerName, row, column, kernel, response)
     elif index == 4:
-        result = additive_inverse_neuron(modelId, layerName, row, column, kernel)
+        result = additive_inverse_neuron(modelId, layerName, row, column, kernel, response)
     elif index == 5:
-        result = invert_neuron(modelId, layerName, row, column, kernel)
+        result = invert_neuron(modelId, layerName, row, column, kernel, response)
     else:
         # If the index is not recognized, return an error message
         raise HTTPException(status_code=400, detail="Invalid Mutation Operator index")
