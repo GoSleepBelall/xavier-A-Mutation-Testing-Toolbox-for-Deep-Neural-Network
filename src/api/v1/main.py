@@ -281,6 +281,29 @@ def getKernelNum(modelId: str, layerName: str):
 
     return json.dumps(layers.getKernelNumbers(model_obj, layerName))
 
+# GET request to retrieve all the weights of a specific kernel in a specific layer of a specific model
+@app.get("/kernel-weights/{modelId}/{layerName}")
+def getAllKernelWeights(modelId: str, layerName: str):
+    # If modelId is passed as Mutant, we have to load mutant
+    if modelId == "Mutant":
+        model_var = models.load_model("../../models/mutant.h5")
+    else:
+        # Get the model object from the dictionary
+        model_var = model_dict.get(modelId)
+
+    # Create a deep copy of the model
+    model_obj = models.clone_model(model_var)
+    model_obj.set_weights(model_var.get_weights())
+    # Get Trainable Weights
+    trainable_weights = weights.GetWeights(model_obj, layerName)
+
+    # Get Kernel wise weights from all weights
+    kernel_weights = []
+    total = layers.getKernelNumbers(model_obj, layerName)
+    for kernel in range(total):
+        kernel_weights.append(weights.getKernelWeights(trainable_weights, kernel))
+    return jt.dumps(kernel_weights)
+
 
 # GET request to retrieve List of Mutation Operators present
 @app.get("/operators-list/{operatortype}")
