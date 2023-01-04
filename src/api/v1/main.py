@@ -29,15 +29,19 @@ alexnet = models.load_model("../../models/xavier-lenet5.h5")
 # A global dictionary mapping model names to model objects
 model_dict = {
     'Lenet5': lenet5,
-    'Alexnet': alexnet
+    'Alexnet': alexnet,
 }
 
 
 # GET request to retrieve all the trainable weights of a particular layer in a specific model
 @app.get("/weights/{modelId}/{layerName}")
 def get_weights(modelId: str, layerName: str):
-    # Get the model object from the dictionary
-    model_var = model_dict.get(modelId)
+    # If modelId is passed as Mutant, we have to load mutant
+    if modelId == "Mutant":
+        model_var = models.load_model("../../models/mutant.h5")
+    else:
+        # Get the model object from the dictionary
+        model_var = model_dict.get(modelId)
 
     # Create a deep copy of the model
     model_obj = models.clone_model(model_var)
@@ -51,8 +55,12 @@ def get_weights(modelId: str, layerName: str):
 # GET request to retrieve all the layers in a specific model
 @app.get("/layers/{modelId}")
 def get_layers(modelId: str):
-    # Get the model object from the dictionary
-    model_var = model_dict.get(modelId)
+    # If modelId is passed as Mutant, we have to load mutant
+    if modelId == "Mutant":
+        model_var = models.load_model("../../models/mutant.h5")
+    else:
+        # Get the model object from the dictionary
+        model_var = model_dict.get(modelId)
 
     # Create a deep copy of the model
     model_obj = models.clone_model(model_var)
@@ -65,8 +73,12 @@ def get_layers(modelId: str):
 # GET request to retrieve all the layers on which Neuron level Mutation Operators are applicable
 @app.get("/neuron_layers/{modelId}")
 def get_neuron_layers(modelId: str):
-    # Get the model object from the dictionary
-    model_var = model_dict.get(modelId)
+    # If modelId is passed as Mutant, we have to load mutant
+    if modelId == "Mutant":
+        model_var = models.load_model("../../models/mutant.h5")
+    else:
+        # Get the model object from the dictionary
+        model_var = model_dict.get(modelId)
 
     # Create a deep copy of the model
     model_obj = models.clone_model(model_var)
@@ -79,8 +91,12 @@ def get_neuron_layers(modelId: str):
 # GET request to retrieve all the weights of a specific kernel in a specific layer of a specific model
 @app.get("/weights/{modelId}/{layerName}/{kernel}")
 def getKernelWeights(modelId: str, layerName: str, kernel: int):
-    # Get the model object from the dictionary
-    model_var = model_dict.get(modelId)
+    # If modelId is passed as Mutant, we have to load mutant
+    if modelId == "Mutant":
+        model_var = models.load_model("../../models/mutant.h5")
+    else:
+        # Get the model object from the dictionary
+        model_var = model_dict.get(modelId)
 
     # Create a deep copy of the model
     model_obj = models.clone_model(model_var)
@@ -96,8 +112,12 @@ def getKernelWeights(modelId: str, layerName: str, kernel: int):
 # GET request to retrieve number of kernels present in a layer
 @app.get("/kernel/{modelId}/{layerName}")
 def getKernelNum(modelId: str, layerName: str):
-    # Get the model object from the dictionary
-    model_var = model_dict.get(modelId)
+    # If modelId is passed as Mutant, we have to load mutant
+    if modelId == "Mutant":
+        model_var = models.load_model("../../models/mutant.h5")
+    else:
+        # Get the model object from the dictionary
+        model_var = model_dict.get(modelId)
 
     # Create a deep copy of the model
     model_obj = models.clone_model(model_var)
@@ -126,8 +146,12 @@ def getMutationOperatorsDescription(operatortype: int):
 @app.put("/change-neuron/{modelId}/{layerName}/{row}/{column}/{kernel}/{value}")
 def change_neuron(modelId: str, layerName: str, row: int, column: int, kernel: int, value: Union[float,None],
                   response: Response):
-    # Get the model object from the dictionary
-    model_var = model_dict.get(modelId)
+    # If modelId is passed as Mutant, we have to load mutant
+    if modelId == "Mutant":
+        model_var = models.load_model("../../models/mutant.h5")
+    else:
+        # Get the model object from the dictionary
+        model_var = model_dict.get(modelId)
 
     # Create a deep copy of the model
     model_obj = models.clone_model(model_var)
@@ -135,6 +159,10 @@ def change_neuron(modelId: str, layerName: str, row: int, column: int, kernel: i
     try:
         operator.changeNeuron(model_obj, layerName, row, column, kernel, value)
         response.status_code = 200
+        # Delete Previous Mutant
+        if os.path.exists('../../models/mutant.h5'):
+            os.remove('../../models/mutant.h5')
+        model_obj.save("../../models/mutant.h5")
         return {"message": "Neuron value successfully changed"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -143,8 +171,12 @@ def change_neuron(modelId: str, layerName: str, row: int, column: int, kernel: i
 # PUT request to block neuron value using Block Neuron Mutation Operator
 @app.put("/block-neuron/{modelId}/{layerName}/{row}/{column}/{kernel}")
 def block_neuron(modelId: str, layerName: str, row: int, column: int, kernel: int, response: Response):
-    # Get the model object from the dictionary
-    model_var = model_dict.get(modelId)
+    # If modelId is passed as Mutant, we have to load mutant
+    if modelId == "Mutant":
+        model_var = models.load_model("../../models/mutant.h5")
+    else:
+        # Get the model object from the dictionary
+        model_var = model_dict.get(modelId)
 
     # Create a deep copy of the model
     model_obj = models.clone_model(model_var)
@@ -152,6 +184,11 @@ def block_neuron(modelId: str, layerName: str, row: int, column: int, kernel: in
     try:
         operator.blockNeuron(model_obj, layerName, row, column, kernel)
         response.status_code = 200
+        # Delete Previous Mutant
+        if os.path.exists('../../models/mutant.h5'):
+            os.remove('../../models/mutant.h5')
+        # Save New Mutant
+        model_obj.save("../../models/mutant.h5")
         return {"message": "Neuron successfully blocked"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -160,8 +197,12 @@ def block_neuron(modelId: str, layerName: str, row: int, column: int, kernel: in
 # PUT request to change neuron value with its multiplicative inverse
 @app.put("/mul-inverse/{modelId}/{layerName}/{row}/{column}/{kernel}")
 def mul_inverse_neuron(modelId: str, layerName: str, row: int, column: int, kernel: int, response: Response):
-    # Get the model object from the dictionary
-    model_var = model_dict.get(modelId)
+    # If modelId is passed as Mutant, we have to load mutant
+    if modelId == "Mutant":
+        model_var = models.load_model("../../models/mutant.h5")
+    else:
+        # Get the model object from the dictionary
+        model_var = model_dict.get(modelId)
 
     # Create a deep copy of the model
     model_obj = models.clone_model(model_var)
@@ -169,6 +210,11 @@ def mul_inverse_neuron(modelId: str, layerName: str, row: int, column: int, kern
     try:
         operator.mul_inverse(model_obj, layerName, row, column, kernel)
         response.status_code = 200
+        # Delete Previous Mutant
+        if os.path.exists('../../models/mutant.h5'):
+            os.remove('../../models/mutant.h5')
+        # Save New Mutant
+        model_obj.save("../../models/mutant.h5")
         return {"message": "Neuron value successfully changed to multiplicative inverse"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -177,8 +223,12 @@ def mul_inverse_neuron(modelId: str, layerName: str, row: int, column: int, kern
 # PUT request to replace neuron with its Additive Inverse
 @app.put("/additive-inverse/{modelId}/{layerName}/{row}/{column}/{kernel}")
 def additive_inverse_neuron(modelId: str, layerName: str, row: int, column: int, kernel: int, response: Response):
-    # Get the model object from the dictionary
-    model_var = model_dict.get(modelId)
+    # If modelId is passed as Mutant, we have to load mutant
+    if modelId == "Mutant":
+        model_var = models.load_model("../../models/mutant.h5")
+    else:
+        # Get the model object from the dictionary
+        model_var = model_dict.get(modelId)
 
     # Create a deep copy of the model
     model_obj = models.clone_model(model_var)
@@ -186,6 +236,11 @@ def additive_inverse_neuron(modelId: str, layerName: str, row: int, column: int,
     try:
         operator.additive_inverse(model_obj, layerName, row, column, kernel)
         response.status_code = 200
+        # Delete Previous Mutant
+        if os.path.exists('../../models/mutant.h5'):
+            os.remove('../../models/mutant.h5')
+        # Save New Mutant
+        model_obj.save("../../models/mutant.h5")
         return {"message": "Neuron value successfully changed to additive inverse"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -194,8 +249,12 @@ def additive_inverse_neuron(modelId: str, layerName: str, row: int, column: int,
 # PUT request to invert the value of neuron using Invert Neuron Mutation Operator
 @app.put("/invert-neuron/{modelId}/{layerName}/{row}/{column}/{kernel}")
 def invert_neuron(modelId: str, layerName: str, row: int, column: int, kernel: int, response: Response):
-    # Get the model object from the dictionary
-    model_var = model_dict.get(modelId)
+    # If modelId is passed as Mutant, we have to load mutant
+    if modelId == "Mutant":
+        model_var = models.load_model("../../models/mutant.h5")
+    else:
+        # Get the model object from the dictionary
+        model_var = model_dict.get(modelId)
 
     # Create a deep copy of the model
     model_obj = models.clone_model(model_var)
@@ -203,6 +262,11 @@ def invert_neuron(modelId: str, layerName: str, row: int, column: int, kernel: i
     try:
         operator.invertNeuron(model_obj, layerName, row, column, kernel)
         response.status_code = 200
+        # Delete Previous Mutant
+        if os.path.exists('../../models/mutant.h5'):
+            os.remove('../../models/mutant.h5')
+        # Save New Mutant
+        model_obj.save("../../models/mutant.h5")
         return {"message": "Neuron value successfully inverted"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
