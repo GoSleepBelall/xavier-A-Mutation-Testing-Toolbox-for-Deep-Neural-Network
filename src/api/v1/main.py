@@ -32,8 +32,8 @@ alexnet = models.load_model("../../models/xavier-lenet5.h5")
 
 # A global dictionary mapping model names to model objects
 model_dict = {
-    'Lenet5': lenet5,
-    'Alexnet': alexnet
+    'lenet5': lenet5,
+    'alexnet': alexnet
 }
 
 # GET request to retrieve confusion matirx for a specific model
@@ -159,7 +159,7 @@ def getModelAccuracy(modelId: str):
     predictions = model_var.predict(test_X)
     labels = test_y
     accuracy = pa.getModelAccuracy(predictions, labels)
-    return {"accuracy": accuracy}
+    return json.dumps({"accuracy": accuracy})
 
 
 # GET request to retrieve accuracy of a specific model
