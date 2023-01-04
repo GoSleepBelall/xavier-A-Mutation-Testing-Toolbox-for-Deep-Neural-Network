@@ -20,7 +20,7 @@ if __name__ == '__main__':
     print('Xavier started.')
     #Load Model
     model = tf.keras.models.load_model("../models/model.h5")
-    model.summary()
+    #model.summary()
 
     #Create Objects
     layers = Model_layers()
@@ -28,7 +28,6 @@ if __name__ == '__main__':
     operator = NeuronLevel()
     VK = VisualKeras()
     VK.visualize_model_using_vk(model)
-    print(layers.getKernelNumbers(model, "conv2d"))
     # Get all trainable weights from model
     trainable_weights = np.asarray(weights.GetWeights(model, "conv2d"))
     np.shape(trainable_weights)
@@ -47,7 +46,7 @@ if __name__ == '__main__':
     print(pa.generate_classification_report(prediction, test_y))
     pa.printConfusionMatrix(prediction, test_y)
     pa.printClassificationReport(prediction, test_y)
-
+    print("Accuracy: ", pa.get_model_accuracy(prediction, test_y))
     """
     Good Example
     Inverting row 3 column 3 of kernel 0 have a great impact on letter 7
@@ -61,8 +60,8 @@ if __name__ == '__main__':
 
     #Un comment Neuron Here
     #operator.changeNeuron(model,layerName, row,column, kernel, value)
-    #operator.additive_inverse(model,layerName, row,column, kernel)
-    operator.mul_inverse(model,layerName, row,column, kernel)
+    operator.additive_inverse(model,layerName, row,column, kernel)
+    #operator.mul_inverse(model,layerName, row,column, kernel)
     #operator.invertNeuron(model,layerName, row,column, kernel)
     #operator.blockNeuron(model,layerName, row,column, kernel)
     #operator.changeNeuron(model,layerName, row,column, kernel)
@@ -70,6 +69,8 @@ if __name__ == '__main__':
     # Predict again with the model
     prediction = model.predict(test_X)
     pa.printClassificationReport(prediction, test_y)
+    print(pa.get_all_metrics(prediction, test_y))
+    print("Accuracy: ", pa.get_model_accuracy(prediction,test_y))
     #pa.generate_classification_report(prediction, test_y)
 
 

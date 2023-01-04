@@ -45,19 +45,13 @@ def get_confusion_matrix(predictions, labels):
     # Reshaping Predictions (Merging data)
     predictions = np.argmax(predictions, axis=1)
 
+    # Get unique class labels in the labels array
+    classes = np.unique(labels)
     # Initialize counters for each class
-    counters = {
-        0: {'tp': 0, 'tn': 0, 'fp': 0, 'fn': 0},
-        1: {'tp': 0, 'tn': 0, 'fp': 0, 'fn': 0},
-        2: {'tp': 0, 'tn': 0, 'fp': 0, 'fn': 0},
-        3: {'tp': 0, 'tn': 0, 'fp': 0, 'fn': 0},
-        4: {'tp': 0, 'tn': 0, 'fp': 0, 'fn': 0},
-        5: {'tp': 0, 'tn': 0, 'fp': 0, 'fn': 0},
-        6: {'tp': 0, 'tn': 0, 'fp': 0, 'fn': 0},
-        7: {'tp': 0, 'tn': 0, 'fp': 0, 'fn': 0},
-        8: {'tp': 0, 'tn': 0, 'fp': 0, 'fn': 0},
-        9: {'tp': 0, 'tn': 0, 'fp': 0, 'fn': 0},
-    }
+    counters = {}
+    for class_label in classes:
+        counters[class_label] = {'tp': 0, 'tn': 0, 'fp': 0, 'fn': 0}
+
     # Loop over the elements in the predictions and labels arrays
     for i in range(len(predictions)):
         # Get the prediction and label for the current element
@@ -169,6 +163,16 @@ def getF1Score(predictions, labels):
         f1_score[class_label] = "{:.4f}".format(2 * (float(p) * float(recall[class_label])) / (float(p) + float(recall[class_label])))
     return f1_score
 
+def get_model_accuracy(prediction, labels):
+    counters = get_confusion_matrix(prediction, labels)
+    tp_sum = 0
+    tn_sum = 0
+    total = 0
+    for class_label, class_counters in counters.items():
+        tp_sum += class_counters['tp']
+        tn_sum += class_counters['tn']
+        total += class_counters['tp'] + class_counters['tn'] + class_counters['fp'] + class_counters['fn']
+    return (tp_sum + tn_sum) / total
 
 def get_all_metrics(predictions, labels):
     results = {}
