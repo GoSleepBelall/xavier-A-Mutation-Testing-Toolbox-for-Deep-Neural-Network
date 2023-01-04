@@ -6,13 +6,15 @@ import sys
 import os
 import json_tricks as jt
 import json
-from tensorflow import keras
 from keras import models
+from tensorflow.keras.datasets import mnist
+import numpy as np
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "main")))
 from mutation_operators import NeuronLevel
 from operator_utils import WeightUtils
 from operator_utils import Model_layers
+import predictions_analysis as pa
 
 app = FastAPI()
 layers = Model_layers()
@@ -25,6 +27,8 @@ lenet5 = models.load_model("../../models/xavier-lenet5.h5")
 alexnet = models.load_model("../../models/xavier-lenet5.h5")
 # TODO: this is still reading lenet-5 because i dont have alexnet right now
 
+# Dataset for Lenet
+(train_X, train_y), (test_X, test_y) = mnist.load_data()
 
 # A global dictionary mapping model names to model objects
 model_dict = {
@@ -32,6 +36,115 @@ model_dict = {
     'Alexnet': alexnet,
 }
 
+# GET request to retrieve confusion matirx for a specific model
+@app.get("/confusion-matrix/{modelId}")
+def getConfusionMatrix(modelId: str):
+    # If modelId is passed as Mutant, we have to load mutant
+    if modelId == "Mutant":
+        model_var = models.load_model("../../models/mutant.h5")
+    else:
+        # Get the model object from the dictionary
+        model_var = model_dict.get(modelId)
+    prediction = model_var.predict(test_X)
+    matrix = pa.get_confusion_matrix(prediction, test_y)
+    return json.dumps(matrix)
+
+# GET request to retrieve accuracy for a specific model
+@app.get("/accuracy/{modelId}")
+def getAccuracy(modelId: str):
+    # If modelId is passed as Mutant, we have to load mutant
+    if modelId == "Mutant":
+        model_var = models.load_model("../../models/mutant.h5")
+    else:
+        # Get the model object from the dictionary
+        model_var = model_dict.get(modelId)
+    prediction = model_var.predict(test_X)
+    accuracy = pa.getAccuracy(prediction, test_y)
+    return json.dumps(accuracy)
+
+
+# GET request to retrieve specificity for a specific model
+@app.get("/specificity/{modelId}")
+def getSpecificity(modelId: str):
+    # If modelId is passed as Mutant, we have to load mutant
+    if modelId == "Mutant":
+        model_var = models.load_model("../../models/mutant.h5")
+    else:
+        # Get the model object from the dictionary
+        model_var = model_dict.get(modelId)
+    prediction = model_var.predict(test_X)
+    specificity = pa.getSpecificity(prediction, test_y)
+    return json.dumps(specificity)
+
+# GET request to retrieve f1-score for a specific model
+@app.get("/f1-score/{modelId}")
+def getf1Score(modelId: str):
+    # If modelId is passed as Mutant, we have to load mutant
+    if modelId == "Mutant":
+        model_var = models.load_model("../../models/mutant.h5")
+    else:
+        # Get the model object from the dictionary
+        model_var = model_dict.get(modelId)
+    prediction = model_var.predict(test_X)
+    f1_score = pa.getf1Score(prediction, test_y)
+    return json.dumps(f1_score)
+
+# GET request to retrieve recall for a specific model
+@app.get("/recall/{modelId}")
+def getRecall(modelId: str):
+    # If modelId is passed as Mutant, we have to load mutant
+    if modelId == "Mutant":
+        model_var = models.load_model("../../models/mutant.h5")
+    else:
+        # Get the model object from the dictionary
+        model_var = model_dict.get(modelId)
+    prediction = model_var.predict(test_X)
+    recall = pa.getRecall(prediction, test_y)
+    return json.dumps(recall)
+
+
+# GET request to retrieve precision for a specific model
+@app.get("/precision/{modelId}")
+def getPrecision(modelId: str):
+    # If modelId is passed as Mutant, we have to load mutant
+    if modelId == "Mutant":
+        model_var = models.load_model("../../models/mutant.h5")
+    else:
+        # Get the model object from the dictionary
+        model_var = model_dict.get(modelId)
+    prediction = model_var.predict(test_X)
+    precision = pa.getPrecision(prediction, test_y)
+    return json.dumps(precision)
+
+# GET request to retrieve sensitivity for a specific model
+@app.get("/sensitivity/{modelId}")
+def get_sensitivity(modelId: str):
+    # If modelId is passed as Mutant, we have to load mutant
+    if modelId == "Mutant":
+        model_var = models.load_model("../../models/mutant.h5")
+    else:
+        # Get the model object from the dictionary
+        model_var = model_dict.get(modelId)
+    predictions = model_var.predict(test_X)
+    labels = test_y
+    sensitivity = get_sensitivity(predictions, labels)
+    return json.dumps(sensitivity)
+
+# GET request to retrieve complete report of a specific model
+@app.get("/report/{modelId}")
+def get_class_metrics(modelId: str):
+    # If modelId is passed as Mutant, we have to load mutant
+    if modelId == "Mutant":
+        model_var = models.load_model("../../models/mutant.h5")
+    else:
+        # Get the model object from the dictionary
+        model_var = model_dict.get(modelId)
+
+    # Generate predictions and labels for the model
+    predictions = model_var.predict(test_X)
+    labels = test_y
+    class_metrics = pa.get_all_metrics(predictions, labels)
+    return json.dumps(class_metrics)
 
 # GET request to retrieve all the trainable weights of a particular layer in a specific model
 @app.get("/weights/{modelId}/{layerName}")
