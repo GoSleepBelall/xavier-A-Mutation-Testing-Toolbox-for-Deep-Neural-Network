@@ -8,9 +8,9 @@ from sklearn.metrics import classification_report
 from prettytable import PrettyTable
 
 
-
 def float_formatter(num):
     return "{:.1f}".format(num)
+
 
 def matrix_mapper(data, count):
     iteration_number = 0
@@ -20,23 +20,26 @@ def matrix_mapper(data, count):
         for y in x:
             print(float_formatter(y), end=" ")
         print("]", end=" ")
-        iteration_number = iteration_number+1
-        if iteration_number>= count:
+        iteration_number = iteration_number + 1
+        if iteration_number >= count:
             break
         print()
     print("]")
+
 
 def classify_weights(single_class, classes):
     classified_data = np_utils.to_categorical(single_class, classes)
     return classified_data
 
-def map_manual_predictions(predictions,test_data, classes, count):
+
+def map_manual_predictions(predictions, test_data, classes, count):
     # In order to map predictions with the labels, we can classify data into 10 classes
     classified_test_data = classify_weights(test_data, classes)
     print("predictions")
-    matrix_mapper(predictions,count)
+    matrix_mapper(predictions, count)
     print("labels")
-    matrix_mapper(classified_test_data,count)
+    matrix_mapper(classified_test_data, count)
+
 
 def get_confusion_matrix(predictions, labels):
     # Reshaping Predictions (Merging data)
@@ -84,9 +87,63 @@ def printConfusionMatrix(predictions, labels):
 
     # Add a row for each class to the table
     for class_label, class_counters in counters.items():
-        table.add_row([class_label, class_counters['tp'], class_counters['tn'], class_counters['fp'], class_counters['fn']])
+        table.add_row(
+            [class_label, class_counters['tp'], class_counters['tn'], class_counters['fp'], class_counters['fn']])
     # Print the table
     print(table)
+
+
+##################===============================#####################
+
+def printClassificationReport(predictions, labels):
+    table = PrettyTable()
+    table.field_names = ['Class', 'Accuracy', 'Specificity', 'Sensitivity', 'recall', 'precision', 'f1-score']
+
+    accuracy = getAccuracy(predictions, labels)
+    specificity = getSpecificity(predictions, labels)
+    sensitivity = getSensitivity(predictions, labels)
+    recall = getRecall(predictions,labels)
+    precision = getPrecision(predictions,labels)
+    f1Score = getF1Score(predictions,labels)
+
+    for class_label in accuracy:
+        table.add_row([class_label, accuracy[class_label], specificity[class_label], sensitivity[class_label], recall[class_label], precision[class_label], f1Score[class_label]])
+
+    print(table)
+
+
+def getAccuracy(predictions, labels):
+    counters = get_confusion_matrix(predictions, labels)
+    accuracy = {}
+    for class_label, class_counters in counters.items():
+        tp = class_counters['tp']
+        tn = class_counters['tn']
+        fp = class_counters['fp']
+        fn = class_counters['fn']
+        accuracy[class_label] = "{:.4f}".format((tp + tn) / (tp + tn + fp + fn))
+    return accuracy
+
+
+def getSpecificity(predictions, labels):
+    counters = get_confusion_matrix(predictions, labels)
+    specificity = {}
+    for class_label, class_counters in counters.items():
+        tn = class_counters['tn']
+        fp = class_counters['fp']
+        specificity[class_label] = "{:.4f}".format(tn / (tn + fp))
+    return specificity
+
+
+def getSensitivity(predictions, labels):
+    counters = get_confusion_matrix(predictions, labels)
+    sensitivity = {}
+    for class_label, class_counters in counters.items():
+        tp = class_counters['tp']
+        fn = class_counters['fn']
+        sensitivity[class_label] = "{:.4f}".format(tp / (tp + fn))
+    return sensitivity
+
+
 
 
 def generate_classification_report(predictions, labels):
