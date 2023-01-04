@@ -33,7 +33,7 @@ alexnet = models.load_model("../../models/xavier-lenet5.h5")
 # A global dictionary mapping model names to model objects
 model_dict = {
     'Lenet5': lenet5,
-    'Alexnet': alexnet,
+    'Alexnet': alexnet
 }
 
 # GET request to retrieve confusion matirx for a specific model
@@ -47,10 +47,10 @@ def getConfusionMatrix(modelId: str):
         model_var = model_dict.get(modelId)
     prediction = model_var.predict(test_X)
     matrix = pa.getConfusionMatrix(prediction, test_y)
-    return json.dumps(matrix)
+    return json.dumps({str(k): v for k, v in matrix.items()})
 
-# GET request to retrieve accuracy for a specific model
-@app.get("/accuracy/{modelId}")
+# GET request to retrieve accuracy for a specific model clas wise
+@app.get("/class-accuracy/{modelId}")
 def getAccuracy(modelId: str):
     # If modelId is passed as Mutant, we have to load mutant
     if modelId == "Mutant":
@@ -60,7 +60,7 @@ def getAccuracy(modelId: str):
         model_var = model_dict.get(modelId)
     prediction = model_var.predict(test_X)
     accuracy = pa.getAccuracy(prediction, test_y)
-    return json.dumps(accuracy)
+    return json.dumps({str(k): v for k, v in accuracy.items()})
 
 
 # GET request to retrieve specificity for a specific model
@@ -74,7 +74,7 @@ def getSpecificity(modelId: str):
         model_var = model_dict.get(modelId)
     prediction = model_var.predict(test_X)
     specificity = pa.getSpecificity(prediction, test_y)
-    return json.dumps(specificity)
+    return json.dumps({str(k): v for k, v in specificity.items()})
 
 # GET request to retrieve f1-score for a specific model
 @app.get("/f1-score/{modelId}")
@@ -86,8 +86,8 @@ def getf1Score(modelId: str):
         # Get the model object from the dictionary
         model_var = model_dict.get(modelId)
     prediction = model_var.predict(test_X)
-    f1_score = pa.getf1Score(prediction, test_y)
-    return json.dumps(f1_score)
+    f1_score = pa.getF1Score(prediction, test_y)
+    return json.dumps({str(k): v for k, v in f1_score.items()})
 
 # GET request to retrieve recall for a specific model
 @app.get("/recall/{modelId}")
@@ -100,7 +100,7 @@ def getRecall(modelId: str):
         model_var = model_dict.get(modelId)
     prediction = model_var.predict(test_X)
     recall = pa.getRecall(prediction, test_y)
-    return json.dumps(recall)
+    return json.dumps({str(k): v for k, v in recall.items()})
 
 
 # GET request to retrieve precision for a specific model
@@ -114,7 +114,7 @@ def getPrecision(modelId: str):
         model_var = model_dict.get(modelId)
     prediction = model_var.predict(test_X)
     precision = pa.getPrecision(prediction, test_y)
-    return json.dumps(precision)
+    return json.dumps({str(k): v for k, v in precision.items()})
 
 # GET request to retrieve sensitivity for a specific model
 @app.get("/sensitivity/{modelId}")
@@ -127,8 +127,8 @@ def get_sensitivity(modelId: str):
         model_var = model_dict.get(modelId)
     predictions = model_var.predict(test_X)
     labels = test_y
-    sensitivity = get_sensitivity(predictions, labels)
-    return json.dumps(sensitivity)
+    sensitivity = pa.getSensitivity(predictions, labels)
+    return json.dumps({str(k): v for k, v in sensitivity.items()})
 
 # GET request to retrieve complete report of a specific model with respect to all classes
 @app.get("/report/{modelId}/{beta}")
@@ -148,7 +148,7 @@ def getReport(modelId: str, beta: float = 1):
 
 
 # GET request to retrieve accuracy of a specific model
-@app.get("/accuracy/{modelId}")
+@app.get("/model-accuracy/{modelId}")
 def getModelAccuracy(modelId: str):
     # If modelId is passed as Mutant, we have to load mutant
     if modelId == "Mutant":
@@ -174,7 +174,7 @@ def getAuc(modelId: str):
     predictions = model_var.predict(test_X)
     labels = test_y
     auc = pa.getAuc(predictions, labels)
-    return json.dumps(auc)
+    return json.dumps({str(k): v for k, v in auc.items()})
 
 @app.get("/f-beta-score/{modelId}/{beta}")
 def getFBetaScore(modelId: str, beta: float = 1.0):
@@ -186,7 +186,7 @@ def getFBetaScore(modelId: str, beta: float = 1.0):
         model_var = model_dict.get(modelId)
     predictions = model_var.predict(test_X)
     f_beta_score = pa.getFBetaScore(predictions, test_y, beta)
-    return json.dumps(f_beta_score)
+    return json.dumps({str(k): v for k, v in f_beta_score.items()})
 
 
 # GET request to retrieve all the trainable weights of a particular layer in a specific model
