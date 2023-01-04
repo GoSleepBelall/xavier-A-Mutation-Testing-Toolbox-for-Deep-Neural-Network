@@ -46,7 +46,7 @@ def getConfusionMatrix(modelId: str):
         # Get the model object from the dictionary
         model_var = model_dict.get(modelId)
     prediction = model_var.predict(test_X)
-    matrix = pa.get_confusion_matrix(prediction, test_y)
+    matrix = pa.getConfusionMatrix(prediction, test_y)
     return json.dumps(matrix)
 
 # GET request to retrieve accuracy for a specific model
@@ -132,7 +132,7 @@ def get_sensitivity(modelId: str):
 
 # GET request to retrieve complete report of a specific model with respect to all classes
 @app.get("/report/{modelId}/{beta}")
-def get_class_metrics(modelId: str, beta: float = 1):
+def getReport(modelId: str, beta: float = 1):
     # If modelId is passed as Mutant, we have to load mutant
     if modelId == "Mutant":
         model_var = models.load_model("../../models/mutant.h5")
@@ -143,7 +143,7 @@ def get_class_metrics(modelId: str, beta: float = 1):
     # Generate predictions and labels for the model
     predictions = model_var.predict(test_X)
     labels = test_y
-    class_metrics = pa.get_all_metrics(predictions, labels, beta)
+    class_metrics = pa.getAllMetrics(predictions, labels, beta)
     return json.dumps(class_metrics)
 
 
@@ -158,7 +158,7 @@ def getModelAccuracy(modelId: str):
         model_var = model_dict.get(modelId)
     predictions = model_var.predict(test_X)
     labels = test_y
-    accuracy = pa.get_model_accuracy(predictions, labels)
+    accuracy = pa.getModelAccuracy(predictions, labels)
     return {"accuracy": accuracy}
 
 
@@ -173,11 +173,11 @@ def getAuc(modelId: str):
         model_var = model_dict.get(modelId)
     predictions = model_var.predict(test_X)
     labels = test_y
-    auc = pa.get_auc(predictions, labels)
+    auc = pa.getAuc(predictions, labels)
     return json.dumps(auc)
 
 @app.get("/f-beta-score/{modelId}/{beta}")
-def get_f_beta_score(modelId: str, beta: float = 1.0):
+def getFBetaScore(modelId: str, beta: float = 1.0):
     # If modelId is passed as Mutant, we have to load mutant
     if modelId == "Mutant":
         model_var = models.load_model("../../models/mutant.h5")
@@ -185,7 +185,7 @@ def get_f_beta_score(modelId: str, beta: float = 1.0):
         # Get the model object from the dictionary
         model_var = model_dict.get(modelId)
     predictions = model_var.predict(test_X)
-    f_beta_score = pa.get_f_beta_score(predictions, test_y, beta)
+    f_beta_score = pa.getFBetaScore(predictions, test_y, beta)
     return json.dumps(f_beta_score)
 
 
