@@ -130,7 +130,7 @@ def get_sensitivity(modelId: str):
     sensitivity = get_sensitivity(predictions, labels)
     return json.dumps(sensitivity)
 
-# GET request to retrieve complete report of a specific model
+# GET request to retrieve complete report of a specific model with respect to all classes
 @app.get("/report/{modelId}")
 def get_class_metrics(modelId: str):
     # If modelId is passed as Mutant, we have to load mutant
@@ -145,6 +145,22 @@ def get_class_metrics(modelId: str):
     labels = test_y
     class_metrics = pa.get_all_metrics(predictions, labels)
     return json.dumps(class_metrics)
+
+
+# GET request to retrieve accuracy of a specific model
+@app.get("/accuracy/{modelId}")
+def getModelAccuracy(modelId: str):
+    # If modelId is passed as Mutant, we have to load mutant
+    if modelId == "Mutant":
+        model_var = models.load_model("../../models/mutant.h5")
+    else:
+        # Get the model object from the dictionary
+        model_var = model_dict.get(modelId)
+    predictions = model_var.predict(test_X)
+    labels = test_y
+    accuracy = pa.get_model_accuracy(predictions, labels)
+    return {"accuracy": accuracy}
+
 
 # GET request to retrieve all the trainable weights of a particular layer in a specific model
 @app.get("/weights/{modelId}/{layerName}")
