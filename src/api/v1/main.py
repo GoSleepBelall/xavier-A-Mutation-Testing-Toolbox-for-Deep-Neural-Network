@@ -131,8 +131,8 @@ def get_sensitivity(modelId: str):
     return json.dumps(sensitivity)
 
 # GET request to retrieve complete report of a specific model with respect to all classes
-@app.get("/report/{modelId}")
-def get_class_metrics(modelId: str):
+@app.get("/report/{modelId}/{beta}")
+def get_class_metrics(modelId: str, beta: float = 1):
     # If modelId is passed as Mutant, we have to load mutant
     if modelId == "Mutant":
         model_var = models.load_model("../../models/mutant.h5")
@@ -143,7 +143,7 @@ def get_class_metrics(modelId: str):
     # Generate predictions and labels for the model
     predictions = model_var.predict(test_X)
     labels = test_y
-    class_metrics = pa.get_all_metrics(predictions, labels)
+    class_metrics = pa.get_all_metrics(predictions, labels, beta)
     return json.dumps(class_metrics)
 
 
@@ -160,6 +160,33 @@ def getModelAccuracy(modelId: str):
     labels = test_y
     accuracy = pa.get_model_accuracy(predictions, labels)
     return {"accuracy": accuracy}
+
+
+# GET request to retrieve accuracy of a specific model
+@app.get("/auc/{modelId}")
+def getAuc(modelId: str):
+    # If modelId is passed as Mutant, we have to load mutant
+    if modelId == "Mutant":
+        model_var = models.load_model("../../models/mutant.h5")
+    else:
+        # Get the model object from the dictionary
+        model_var = model_dict.get(modelId)
+    predictions = model_var.predict(test_X)
+    labels = test_y
+    auc = pa.get_auc(predictions, labels)
+    return json.dumps(auc)
+
+@app.get("/f-beta-score/{modelId}/{beta}")
+def get_f_beta_score(modelId: str, beta: float = 1.0):
+    # If modelId is passed as Mutant, we have to load mutant
+    if modelId == "Mutant":
+        model_var = models.load_model("../../models/mutant.h5")
+    else:
+        # Get the model object from the dictionary
+        model_var = model_dict.get(modelId)
+    predictions = model_var.predict(test_X)
+    f_beta_score = pa.get_f_beta_score(predictions, test_y, beta)
+    return json.dumps(f_beta_score)
 
 
 # GET request to retrieve all the trainable weights of a particular layer in a specific model

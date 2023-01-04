@@ -45,7 +45,7 @@ if __name__ == '__main__':
     prediction = model.predict(test_X)
     print(pa.generate_classification_report(prediction, test_y))
     pa.printConfusionMatrix(prediction, test_y)
-    pa.printClassificationReport(prediction, test_y)
+    pa.printClassificationReport(prediction, test_y, 1.0)
     print("Accuracy: ", pa.get_model_accuracy(prediction, test_y))
     """
     Good Example
@@ -68,9 +68,7 @@ if __name__ == '__main__':
 
     # Predict again with the model
     prediction = model.predict(test_X)
-    pa.printClassificationReport(prediction, test_y)
-    print(pa.get_all_metrics(prediction, test_y))
-    print("Accuracy: ", pa.get_model_accuracy(prediction,test_y))
+    pa.printClassificationReport(prediction, test_y, 1.0)
     #pa.generate_classification_report(prediction, test_y)
 
 

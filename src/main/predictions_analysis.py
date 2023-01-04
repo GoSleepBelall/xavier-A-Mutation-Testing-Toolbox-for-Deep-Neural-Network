@@ -89,11 +89,11 @@ def printConfusionMatrix(predictions, labels):
 
 ##################===============================#####################
 
-def printClassificationReport(predictions, labels):
+def printClassificationReport(predictions, labels, beta):
     table = PrettyTable()
-    table.field_names = ['Class', 'Accuracy', 'Specificity', 'Sensitivity', 'recall', 'precision', 'f1-score']
+    table.field_names = ['Class', 'Accuracy', 'Specificity', 'Sensitivity', 'recall', 'precision', 'f1-score', 'AUC', "F-Beta"]
 
-    metrics = get_all_metrics(predictions, labels)
+    metrics = get_all_metrics(predictions, labels, beta)
     for class_label, class_metrics in metrics.items():
         table.add_row(
             [class_label,
@@ -102,7 +102,10 @@ def printClassificationReport(predictions, labels):
              class_metrics['sensitivity'],
              class_metrics['recall'],
              class_metrics['precision'],
-             class_metrics['f1_score']])
+             class_metrics['f1_score'],
+             class_metrics['AUC'],
+             class_metrics['F_beta']
+             ])
     print(table)
 
 
@@ -174,7 +177,7 @@ def get_model_accuracy(prediction, labels):
         total += class_counters['tp'] + class_counters['tn'] + class_counters['fp'] + class_counters['fn']
     return (tp_sum + tn_sum) / total
 
-def get_all_metrics(predictions, labels):
+def get_all_metrics(predictions, labels, beta):
     results = {}
     accuracy = getAccuracy(predictions, labels)
     specificity = getSpecificity(predictions, labels)
@@ -182,7 +185,8 @@ def get_all_metrics(predictions, labels):
     precision = getPrecision(predictions, labels)
     recall = getRecall(predictions, labels)
     f1_score = getF1Score(predictions, labels)
-
+    auc = get_auc(predictions,labels)
+    f_beta = get_f_beta_score(predictions, labels, beta)
     for class_label in range(10):
         class_results = {
             'accuracy': accuracy[class_label],
@@ -190,11 +194,39 @@ def get_all_metrics(predictions, labels):
             'sensitivity': sensitivity[class_label],
             'precision': precision[class_label],
             'recall': recall[class_label],
-            'f1_score': f1_score[class_label]
+            'f1_score': f1_score[class_label],
+            'AUC': auc[class_label],
+            'F_beta': f_beta[class_label]
         }
         results[class_label] = class_results
 
     return results
+
+
+
+def get_auc(predictions, labels):
+    counters = get_confusion_matrix(predictions, labels)
+    auc = {}
+    for class_label, class_counters in counters.items():
+        tp = class_counters['tp']
+        tn = class_counters['tn']
+        fp = class_counters['fp']
+        fn = class_counters['fn']
+        auc[class_label] = "{:.4f}".format((tp / (tp + fn)) - (fp / (fp + tn)))
+    return auc
+
+def get_f_beta_score(predictions, labels, beta):
+    # Get precision and recall for all classes
+    precision = getPrecision(predictions, labels)
+    recall = getRecall(predictions, labels)
+
+    # Initialize a dictionary to store the F-beta score for each class
+    f_beta_score = {}
+    # Compute the F-beta score for each class
+    for class_label, p in precision.items():
+        f_beta_score[class_label] = "{:.4f}".format((1 + beta**2) * (float(p) * float(recall[class_label])) / ((beta**2 * float(p)) + float(recall[class_label])))
+
+    return f_beta_score
 
 def generate_classification_report(predictions, labels):
     # Reshaping Predictions (Merging data)
