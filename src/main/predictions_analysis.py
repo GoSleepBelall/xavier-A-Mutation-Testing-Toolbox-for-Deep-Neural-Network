@@ -99,16 +99,16 @@ def printClassificationReport(predictions, labels):
     table = PrettyTable()
     table.field_names = ['Class', 'Accuracy', 'Specificity', 'Sensitivity', 'recall', 'precision', 'f1-score']
 
-    accuracy = getAccuracy(predictions, labels)
-    specificity = getSpecificity(predictions, labels)
-    sensitivity = getSensitivity(predictions, labels)
-    recall = getRecall(predictions,labels)
-    precision = getPrecision(predictions,labels)
-    f1Score = getF1Score(predictions,labels)
-
-    for class_label in accuracy:
-        table.add_row([class_label, accuracy[class_label], specificity[class_label], sensitivity[class_label], recall[class_label], precision[class_label], f1Score[class_label]])
-
+    metrics = get_all_metrics(predictions, labels)
+    for class_label, class_metrics in metrics.items():
+        table.add_row(
+            [class_label,
+             class_metrics['accuracy'],
+             class_metrics['specificity'],
+             class_metrics['sensitivity'],
+             class_metrics['recall'],
+             class_metrics['precision'],
+             class_metrics['f1_score']])
     print(table)
 
 
