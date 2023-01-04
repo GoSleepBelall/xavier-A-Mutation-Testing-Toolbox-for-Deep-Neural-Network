@@ -170,6 +170,28 @@ def getF1Score(predictions, labels):
     return f1_score
 
 
+def get_all_metrics(predictions, labels):
+    results = {}
+    accuracy = getAccuracy(predictions, labels)
+    specificity = getSpecificity(predictions, labels)
+    sensitivity = getSensitivity(predictions, labels)
+    precision = getPrecision(predictions, labels)
+    recall = getRecall(predictions, labels)
+    f1_score = getF1Score(predictions, labels)
+
+    for class_label in range(10):
+        class_results = {
+            'accuracy': accuracy[class_label],
+            'specificity': specificity[class_label],
+            'sensitivity': sensitivity[class_label],
+            'precision': precision[class_label],
+            'recall': recall[class_label],
+            'f1_score': f1_score[class_label]
+        }
+        results[class_label] = class_results
+
+    return results
+
 def generate_classification_report(predictions, labels):
     # Reshaping Predictions (Merging data)
     predictions = np.argmax(predictions, axis=1)
