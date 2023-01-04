@@ -44,7 +44,9 @@ if __name__ == '__main__':
 
     #Generate Classification report of Original Model
     prediction = model.predict(test_X)
-    pa.generate_classification_report(prediction, test_y)
+    print(pa.generate_classification_report(prediction, test_y))
+    pa.printConfusionMatrix(prediction, test_y)
+    pa.printClassificationReport(prediction, test_y)
 
     """
     Good Example
@@ -59,15 +61,16 @@ if __name__ == '__main__':
 
     #Un comment Neuron Here
     #operator.changeNeuron(model,layerName, row,column, kernel, value)
-    operator.additive_inverse(model,layerName, row,column, kernel)
-    #operator.mul_inverse(model,layerName, row,column, kernel)
+    #operator.additive_inverse(model,layerName, row,column, kernel)
+    operator.mul_inverse(model,layerName, row,column, kernel)
     #operator.invertNeuron(model,layerName, row,column, kernel)
     #operator.blockNeuron(model,layerName, row,column, kernel)
     #operator.changeNeuron(model,layerName, row,column, kernel)
 
     # Predict again with the model
     prediction = model.predict(test_X)
-    pa.generate_classification_report(prediction, test_y)
+    pa.printClassificationReport(prediction, test_y)
+    #pa.generate_classification_report(prediction, test_y)
 
 
 
