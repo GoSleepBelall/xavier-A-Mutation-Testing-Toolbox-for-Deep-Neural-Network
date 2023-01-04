@@ -143,7 +143,31 @@ def getSensitivity(predictions, labels):
         sensitivity[class_label] = "{:.4f}".format(tp / (tp + fn))
     return sensitivity
 
+def getPrecision(predictions, labels):
+    counters = get_confusion_matrix(predictions, labels)
+    precision = {}
+    for class_label, class_counters in counters.items():
+        tp = class_counters['tp']
+        fp = class_counters['fp']
+        precision[class_label] = "{:.4f}".format(tp / (tp + fp))
+    return precision
 
+def getRecall(predictions, labels):
+    counters = get_confusion_matrix(predictions, labels)
+    recall = {}
+    for class_label, class_counters in counters.items():
+        tp = class_counters['tp']
+        fn = class_counters['fn']
+        recall[class_label] = "{:.4f}".format(tp / (tp + fn))
+    return recall
+
+def getF1Score(predictions, labels):
+    precision = getPrecision(predictions, labels)
+    recall = getRecall(predictions, labels)
+    f1_score = {}
+    for class_label, p in precision.items():
+        f1_score[class_label] = "{:.4f}".format(2 * (float(p) * float(recall[class_label])) / (float(p) + float(recall[class_label])))
+    return f1_score
 
 
 def generate_classification_report(predictions, labels):
