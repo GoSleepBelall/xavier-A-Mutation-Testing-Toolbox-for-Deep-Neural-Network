@@ -20,7 +20,7 @@ class NeuronLevel:
 
     def blockNeuron(self, model, layerName, row, column, kernel):
         trainable_weights = self.weights.GetWeights(model, layerName)
-        trainable_weights[0][row][column][0][kernel]  = 0                       #Block Effect
+        trainable_weights[0][row][column][0][kernel] = 0                       #Block Effect
         self.weights.SetWeights(model,layerName, trainable_weights)
         print("value of neuron from kernel number ", kernel, " at row ", row, " and column ", column, " is blocked")
 
@@ -32,16 +32,60 @@ class NeuronLevel:
 
     def additive_inverse(self, model,layerName, row, column, kernel):
         trainable_weights = self.weights.GetWeights(model, layerName)
-        trainable_weights[0][row][column][0][kernel]  = float(0 - trainable_weights[0][row][column][0][kernel])
+        trainable_weights[0][row][column][0][kernel] = float(0 - trainable_weights[0][row][column][0][kernel])
         self.weights.SetWeights(model,layerName, trainable_weights)
         print("value of neuron from kernel number ", kernel, " at row ", row, " and column ", column, " is changed with it's additive inverse")
 
     def invertNeuron(self, model,layerName, row, column, kernel):
         trainable_weights = self.weights.GetWeights(model, layerName)
         if trainable_weights[0][row][column][0][kernel] > 0:
-            trainable_weights[0][row][column][0][kernel]  = -abs(trainable_weights[0][row][column][0][kernel])
+            trainable_weights[0][row][column][0][kernel] = -abs(trainable_weights[0][row][column][0][kernel])
         else:
             trainable_weights[0][row][column][0][kernel] = abs(trainable_weights[0][row][column][0][kernel])
         self.weights.SetWeights(model, layerName, trainable_weights)
         print("value of neuron from kernel number ", kernel, " at row ", row, " and column ", column, " is inverted")
 
+
+class EdgeLevel:
+    # Composition
+    weights = WeightUtils()
+
+    edgeLevelMutationOperatorslist = ["Change Edge", "Block Edge", "Multiplicative Inverse", "Additive Inverse", "Invert Edge"]
+    edgeLevelMutationOperatorsDescription = ["It changes the value of specified Edge connecting two neurons",
+                                               "It blocks the effect of Edge by replacing it with 0",
+                                               "It replace the value of a Edge with Multiplicative inverse of it's current value",
+                                               "It replaces the value of a Edge with Additive Inverse of it's current value",
+                                               "It performs unary negation on the current value of Edge"]
+
+    def changeEdge(self, model, layerName, prevNeuron, currNeuron, value):
+        trainable_weights = self.weights.GetWeights(model, layerName)
+        trainable_weights[0][prevNeuron][currNeuron] = value
+        self.weights.SetWeights(model,layerName, trainable_weights)
+        print("value of edge from Neuron # ", prevNeuron, " that joins to Neuron #", currNeuron, " in layer", layerName, " successfully changed")
+
+    def blockEdge(self, model, layerName, prevNeuron, currNeuron):
+        trainable_weights = self.weights.GetWeights(model, layerName)
+        trainable_weights[0][prevNeuron][currNeuron] = 0                       # Block Effect
+        self.weights.SetWeights(model,layerName, trainable_weights)
+        print("value of edge from Neuron # ", prevNeuron, " that joins to Neuron #", currNeuron, " in layer", layerName, " is blocked")
+
+    def mul_inverse(self, model,layerName, prevNeuron, currNeuron):
+        trainable_weights = self.weights.GetWeights(model, layerName)
+        trainable_weights[0][prevNeuron][currNeuron] = float(1/trainable_weights[0][prevNeuron][currNeuron])
+        self.weights.SetWeights(model,layerName, trainable_weights)
+        print("value of edge from Neuron # ", prevNeuron, " that joins to Neuron #", currNeuron, " in layer", layerName, "  is changed with it's multiplicative inverse")
+
+    def additive_inverse(self, model,layerName,prevNeuron, currNeuron):
+        trainable_weights = self.weights.GetWeights(model, layerName)
+        trainable_weights[0][prevNeuron][currNeuron] = float(0 - trainable_weights[0][prevNeuron][currNeuron])
+        self.weights.SetWeights(model,layerName, trainable_weights)
+        print("value of edge from Neuron # ", prevNeuron, " that joins to Neuron #", currNeuron, " in layer", layerName, "  is changed with it's additive inverse")
+
+    def invertEdge(self, model,layerName, prevNeuron, currNeuron):
+        trainable_weights = self.weights.GetWeights(model, layerName)
+        if trainable_weights[0][prevNeuron][currNeuron] > 0:
+            trainable_weights[0][prevNeuron][currNeuron] = -abs(trainable_weights[0][prevNeuron][currNeuron])
+        else:
+            trainable_weights[0][prevNeuron][currNeuron] = abs(trainable_weights[0][prevNeuron][currNeuron])
+        self.weights.SetWeights(model, layerName, trainable_weights)
+        print("value of edge from Neuron # ", prevNeuron, " that joins to Neuron #", currNeuron, " in layer", layerName, "  is inverted")

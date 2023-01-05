@@ -88,10 +88,16 @@ class Model_layers:
     def getNeuronLayers(self, model):
         layer_names = []
         for layer in model.layers:
-            if hasattr(layer, 'trainable_weights') and len(layer.trainable_weights) > 0:
+            if layer.name.startswith('conv'):
                 layer_names.append(layer.name)
         return layer_names
 
+    def getEdgeLayers(self,model):
+        layer_names = []
+        for layer in model.layers:
+            if layer.name.startswith('dense'):
+                layer_names.append(layer.name)
+        return layer_names
 
 """
 Additional Information: (DO NOT REMOVE)

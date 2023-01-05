@@ -1,4 +1,5 @@
 from mutation_operators import NeuronLevel
+from mutation_operators import EdgeLevel
 from visualizer import VisualKeras
 import predictions_analysis as pa
 from models_generator import Lenet5Generator
@@ -8,29 +9,58 @@ import tensorflow as tf
 from tensorflow.keras.datasets import mnist
 from tensorflow import keras
 import numpy as np
+from tensorflow.keras.optimizers import Adam
+
 
 
 
 if __name__ == '__main__':
-    """ Playground """
+    #place a hashtag before next line to enter/leave playground
+    #""""
+    #Playground
     #Lenet5_generator = Lenet5_generator()
     #Lenet5_generator.generate_model()
+    model = tf.keras.models.load_model("../models/model.h5")
+    model.summary()
+    layers = Model_layers()
+    print(layers.getNeuronLayers(model))
+    print(layers.getEdgeLayers(model))
+    """
 
-    """Functionality"""
+    """#Functionality
+    """
     print('Xavier started.')
     #Load Model
     model = tf.keras.models.load_model("../models/model.h5")
-    #model.summary()
+    model.summary()
 
     #Create Objects
     layers = Model_layers()
     weights = WeightUtils()
-    operator = NeuronLevel()
+    convOperator = NeuronLevel()
+    denseOperator = EdgeLevel()
     VK = VisualKeras()
+
+    # Visualization Demo
     VK.visualize_model_using_vk(model)
+    layer_names = layers.getLayerNames(model)
+    count = 0
+    print("select an index: ")
+    for x in layer_names:
+        print(count , "- ", x)
+        count = count+1
+    count = int(input("choice: "))
+    # Set Layer Name to perform Operation
+    layerName = layer_names[count]
+
     # Get all trainable weights from model
-    trainable_weights = np.asarray(weights.GetWeights(model, "conv2d"))
-    np.shape(trainable_weights)
+    trainable_weights = np.asarray(weights.GetWeights(model, layerName))
+
+    #The format of Trainable_weights are:
+    # Convolution Layer: trainable_weights[bias][row][column][0][kernel]
+    # Dense Layer: trainable_weights[bias][prevNeuron][currNeuron]
+
+
 
     # Load Dataset
     (train_X, train_y), (test_X, test_y) = mnist.load_data()
@@ -41,51 +71,40 @@ if __name__ == '__main__':
 
     #model.evaluate(test_X, test_y)
 
-    #Generate Classification report of Original Model
-    prediction = model.predict(test_X)
-    print(pa.generate_classification_report(prediction, test_y))
-    pa.printConfusionMatrix(prediction, test_y)
-    pa.printClassificationReport(prediction, test_y, 1.0)
-    print("Accuracy: ", pa.getModelAccuracy(prediction, test_y))
-    """
-    Good Example
-    Inverting row 3 column 3 of kernel 0 have a great impact on letter 7
-    """
+
+    # Good Example
+    # Inverting row 3 column 3 of kernel 0 have a great impact on letter 7
+    
     #Change Values here
     row = 3
     column = 3
     kernel = 0
     value = 0
-    layerName = "conv2d"
+    if layerName[0] == 'c':
+        #Uncomment Neuron Here
+        convOperator.changeNeuron(model,layerName, row,column, kernel, value)
+        #convOperator.additive_inverse(model,layerName, row,column, kernel)
+        #convOperator.mul_inverse(model,layerName, row,column, kernel)
+        #convOperator.invertNeuron(model,layerName, row,column, kernel)
+        #convOperator.blockNeuron(model,layerName, row,column, kernel)
+        #convOperator.changeNeuron(model,layerName, row,column, kernel)
+    elif layerName[0] == 'd':
+        # Uncomment Neuron Here
+        #denseOperator.changeNeuron(model, "dense",0,0, -2)
+        #denseOperator.blockNeuron(model, "dense",0,0)
+        #denseOperator.invertNeuron(model, "dense",0,0)
+        denseOperator.additive_inverse(model, "dense",0,0)
+        #denseOperator.mul_inverse(model, "dense",0,0)
 
-    #Un comment Neuron Here
-    #operator.changeNeuron(model,layerName, row,column, kernel, value)
-    operator.additive_inverse(model,layerName, row,column, kernel)
-    #operator.mul_inverse(model,layerName, row,column, kernel)
-    #operator.invertNeuron(model,layerName, row,column, kernel)
-    #operator.blockNeuron(model,layerName, row,column, kernel)
-    #operator.changeNeuron(model,layerName, row,column, kernel)
-
-    # Predict again with the model
+    # Generate Classification report of Original Model
     prediction = model.predict(test_X)
+
+    pa.printConfusionMatrix(prediction, test_y)
+
     pa.printClassificationReport(prediction, test_y, 1.0)
-    #pa.generate_classification_report(prediction, test_y)
 
+    print("Accuracy: ", pa.getModelAccuracy(prediction, test_y))
 
-
-
-
-
-
-
-    # Change Weights with a factor (currently performing Sum)
-    # Paramater List
-    # - Model (imported or created)
-    # - Type of Layer to be manipulated
-    # - Name of Layer to be manipulated
-    # - Current Weight Array
-    # - Factor to be added
-    #weights.SetWeights(model, keras.layers.Conv2D, "conv2d", trainable_weights)
 
     # Check Accuracy again
     #model.evaluate(test_X, test_y)
