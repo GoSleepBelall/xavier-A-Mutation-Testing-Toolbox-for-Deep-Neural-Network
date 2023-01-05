@@ -18,7 +18,7 @@ from operator_utils import WeightUtils
 from operator_utils import Model_layers
 import predictions_analysis as pa
 
-app = FastAPI()
+app = FastAPI(title="XAVIER-API", description="A Mutation Testing Toolbox.", version="1.0")
 layers = Model_layers()
 weights = WeightUtils()
 NeuronOperator = NeuronLevel()
