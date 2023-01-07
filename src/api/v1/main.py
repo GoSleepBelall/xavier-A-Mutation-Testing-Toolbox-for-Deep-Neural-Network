@@ -342,7 +342,7 @@ def getKernelNum(modelId: str, layerName: str):
 @app.get("/operators-list/{operatortype}")
 def getMutationOperatorsList(operatortype: int):
     if operatortype == 1:
-        return json.dumps(NeuronLevel.neuronLevelMutationOperatorslist)
+        return json.dumps(NeuronLevel.neuronLevelMutationOperatorshash)
     elif operatortype == 2:
         return json.dumps(EdgeLevel.edgeLevelMutationOperatorslist)
     else:
