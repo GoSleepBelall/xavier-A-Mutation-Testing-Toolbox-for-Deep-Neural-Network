@@ -89,8 +89,7 @@ def printConfusionMatrix(predictions, labels):
 
 ##################===============================#####################
 
-def getAccuracy(predictions, labels):
-    counters = getConfusionMatrix(predictions, labels)
+def getAccuracy(counters):
     accuracy = {}
     for class_label, class_counters in counters.items():
         tp = class_counters['tp']
@@ -101,8 +100,7 @@ def getAccuracy(predictions, labels):
     return accuracy
 
 
-def getSpecificity(predictions, labels):
-    counters = getConfusionMatrix(predictions, labels)
+def getSpecificity(counters):
     specificity = {}
     for class_label, class_counters in counters.items():
         tn = class_counters['tn']
@@ -111,8 +109,7 @@ def getSpecificity(predictions, labels):
     return specificity
 
 
-def getSensitivity(predictions, labels):
-    counters = getConfusionMatrix(predictions, labels)
+def getSensitivity(counters):
     sensitivity = {}
     for class_label, class_counters in counters.items():
         tp = class_counters['tp']
@@ -120,8 +117,7 @@ def getSensitivity(predictions, labels):
         sensitivity[class_label] = "{:.4f}".format(tp / (tp + fn))
     return sensitivity
 
-def getPrecision(predictions, labels):
-    counters = getConfusionMatrix(predictions, labels)
+def getPrecision(counters):
     precision = {}
     for class_label, class_counters in counters.items():
         tp = class_counters['tp']
@@ -129,8 +125,7 @@ def getPrecision(predictions, labels):
         precision[class_label] = "{:.4f}".format(tp / (tp + fp))
     return precision
 
-def getRecall(predictions, labels):
-    counters = getConfusionMatrix(predictions, labels)
+def getRecall(counters):
     recall = {}
     for class_label, class_counters in counters.items():
         tp = class_counters['tp']
@@ -138,16 +133,15 @@ def getRecall(predictions, labels):
         recall[class_label] = "{:.4f}".format(tp / (tp + fn))
     return recall
 
-def getF1Score(predictions, labels):
-    precision = getPrecision(predictions, labels)
-    recall = getRecall(predictions, labels)
+def getF1Score(counters):
+    precision = getPrecision(counters)
+    recall = getRecall(counters)
     f1_score = {}
     for class_label, p in precision.items():
         f1_score[class_label] = "{:.4f}".format(2 * (float(p) * float(recall[class_label])) / (float(p) + float(recall[class_label])))
     return f1_score
 
-def getAuc(predictions, labels):
-    counters = getConfusionMatrix(predictions, labels)
+def getAuc(counters):
     auc = {}
     for class_label, class_counters in counters.items():
         tp = class_counters['tp']
@@ -157,10 +151,10 @@ def getAuc(predictions, labels):
         auc[class_label] = "{:.4f}".format((tp / (tp + fn)) - (fp / (fp + tn)))
     return auc
 
-def getFBetaScore(predictions, labels, beta):
+def getFBetaScore(counters, beta):
     # Get precision and recall for all classes
-    precision = getPrecision(predictions, labels)
-    recall = getRecall(predictions, labels)
+    precision = getPrecision(counters)
+    recall = getRecall(counters)
 
     # Initialize a dictionary to store the F-beta score for each class
     f_beta_score = {}
@@ -170,8 +164,7 @@ def getFBetaScore(predictions, labels, beta):
 
     return f_beta_score
 
-def getModelAccuracy(prediction, labels):
-    counters = getConfusionMatrix(prediction, labels)
+def getModelAccuracy(counters):
     tp_sum = 0
     tn_sum = 0
     total = 0
@@ -181,16 +174,16 @@ def getModelAccuracy(prediction, labels):
         total += class_counters['tp'] + class_counters['tn'] + class_counters['fp'] + class_counters['fn']
     return (tp_sum + tn_sum) / total
 
-def getAllMetrics(predictions, labels, beta):
+def getAllMetrics(counters, beta):
     results = {}
-    accuracy = getAccuracy(predictions, labels)
-    specificity = getSpecificity(predictions, labels)
-    sensitivity = getSensitivity(predictions, labels)
-    precision = getPrecision(predictions, labels)
-    recall = getRecall(predictions, labels)
-    f1_score = getF1Score(predictions, labels)
-    auc = getAuc(predictions, labels)
-    f_beta = getFBetaScore(predictions, labels, beta)
+    accuracy = getAccuracy(counters)
+    specificity = getSpecificity(counters)
+    sensitivity = getSensitivity(counters)
+    precision = getPrecision(counters)
+    recall = getRecall(counters)
+    f1_score = getF1Score(counters)
+    auc = getAuc(counters)
+    f_beta = getFBetaScore(counters, beta)
     for class_label in range(10):
         class_results = {
             'accuracy': accuracy[class_label],
@@ -207,11 +200,11 @@ def getAllMetrics(predictions, labels, beta):
     return results
 
 
-def printClassificationReport(predictions, labels, beta):
+def printClassificationReport(counters, beta):
     table = PrettyTable()
     table.field_names = ['Class', 'Accuracy', 'Specificity', 'Sensitivity', 'recall', 'precision', 'f1-score', 'AUC', "F-Beta"]
 
-    metrics = getAllMetrics(predictions, labels, beta)
+    metrics = getAllMetrics(counters, beta)
     for class_label, class_metrics in metrics.items():
         table.add_row(
             [class_label,

@@ -16,7 +16,7 @@ from tensorflow.keras.optimizers import Adam
 
 if __name__ == '__main__':
     #place a hashtag before next line to enter/leave playground
-    #""""
+    """"
     #Playground
     #Lenet5_generator = Lenet5_generator()
     #Lenet5_generator.generate_model()

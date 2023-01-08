@@ -62,7 +62,8 @@ def getAccuracy(modelId: str):
         # Get the model object from the dictionary
         model_var = model_dict.get(modelId)
     prediction = model_var.predict(test_X)
-    accuracy = pa.getAccuracy(prediction, test_y)
+    matrix = pa.getConfusionMatrix(prediction, test_y)
+    accuracy = pa.getAccuracy(matrix)
     return json.dumps({str(k): v for k, v in accuracy.items()})
 
 # GET request to retrieve accuracy of a specific model
@@ -75,8 +76,8 @@ def getModelAccuracy(modelId: str):
         # Get the model object from the dictionary
         model_var = model_dict.get(modelId)
     predictions = model_var.predict(test_X)
-    labels = test_y
-    accuracy = pa.getModelAccuracy(predictions, labels)
+    matrix = pa.getConfusionMatrix(predictions, test_y)
+    accuracy = pa.getModelAccuracy(matrix)
     return json.dumps({"accuracy": accuracy})
 
 
@@ -90,7 +91,8 @@ def getSpecificity(modelId: str):
         # Get the model object from the dictionary
         model_var = model_dict.get(modelId)
     prediction = model_var.predict(test_X)
-    specificity = pa.getSpecificity(prediction, test_y)
+    matrix = pa.getConfusionMatrix(prediction, test_y)
+    specificity = pa.getSpecificity(matrix)
     return json.dumps({str(k): v for k, v in specificity.items()})
 
 # GET request to retrieve f1-score for a specific model
@@ -103,7 +105,8 @@ def getf1Score(modelId: str):
         # Get the model object from the dictionary
         model_var = model_dict.get(modelId)
     prediction = model_var.predict(test_X)
-    f1_score = pa.getF1Score(prediction, test_y)
+    matrix = pa.getConfusionMatrix(prediction, test_y)
+    f1_score = pa.getF1Score(matrix)
     return json.dumps({str(k): v for k, v in f1_score.items()})
 
 # GET request to retrieve recall for a specific model
@@ -116,7 +119,8 @@ def getRecall(modelId: str):
         # Get the model object from the dictionary
         model_var = model_dict.get(modelId)
     prediction = model_var.predict(test_X)
-    recall = pa.getRecall(prediction, test_y)
+    matrix = pa.getConfusionMatrix(prediction, test_y)
+    recall = pa.getRecall(matrix)
     return json.dumps({str(k): v for k, v in recall.items()})
 
 
@@ -130,7 +134,8 @@ def getPrecision(modelId: str):
         # Get the model object from the dictionary
         model_var = model_dict.get(modelId)
     prediction = model_var.predict(test_X)
-    precision = pa.getPrecision(prediction, test_y)
+    matrix = pa.getConfusionMatrix(prediction, test_y)
+    precision = pa.getPrecision(matrix)
     return json.dumps({str(k): v for k, v in precision.items()})
 
 # GET request to retrieve sensitivity for a specific model
@@ -143,8 +148,8 @@ def get_sensitivity(modelId: str):
         # Get the model object from the dictionary
         model_var = model_dict.get(modelId)
     predictions = model_var.predict(test_X)
-    labels = test_y
-    sensitivity = pa.getSensitivity(predictions, labels)
+    matrix = pa.getConfusionMatrix(predictions, test_y)
+    sensitivity = pa.getSensitivity(matrix)
     return json.dumps({str(k): v for k, v in sensitivity.items()})
 
 # GET request to retrieve complete report of a specific model with respect to all classes
@@ -159,8 +164,8 @@ def getReport(modelId: str, beta: float = 1):
 
     # Generate predictions and labels for the model
     predictions = model_var.predict(test_X)
-    labels = test_y
-    class_metrics = pa.getAllMetrics(predictions, labels, beta)
+    matrix = pa.getConfusionMatrix(predictions, test_y)
+    class_metrics = pa.getAllMetrics(matrix, beta)
     return json.dumps(class_metrics)
 
 # GET request to retrieve accuracy of a specific model
@@ -173,8 +178,8 @@ def getAuc(modelId: str):
         # Get the model object from the dictionary
         model_var = model_dict.get(modelId)
     predictions = model_var.predict(test_X)
-    labels = test_y
-    auc = pa.getAuc(predictions, labels)
+    matrix = pa.getConfusionMatrix(predictions, test_y)
+    auc = pa.getAuc(matrix)
     return json.dumps({str(k): v for k, v in auc.items()})
 
 @app.get("/f-beta-score/{modelId}/{beta}")
@@ -186,7 +191,8 @@ def getFBetaScore(modelId: str, beta: float = 1.0):
         # Get the model object from the dictionary
         model_var = model_dict.get(modelId)
     predictions = model_var.predict(test_X)
-    f_beta_score = pa.getFBetaScore(predictions, test_y, beta)
+    matrix = pa.getConfusionMatrix(predictions, test_y)
+    f_beta_score = pa.getFBetaScore(matrix, beta)
     return json.dumps({str(k): v for k, v in f_beta_score.items()})
 
 # GET request to retrieve all the layers in a specific model
