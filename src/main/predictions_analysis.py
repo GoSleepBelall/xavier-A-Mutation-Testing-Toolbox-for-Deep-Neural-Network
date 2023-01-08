@@ -138,7 +138,7 @@ def getF1Score(counters):
     recall = getRecall(counters)
     f1_score = {}
     for class_label, p in precision.items():
-        if p == 0 or recall[class_label] == 0:
+        if float(p) == 0 or float(recall[class_label]) == 0:
             f1_score[class_label] = 0
         else:
             f1_score[class_label] = "{:.4f}".format(2 * (float(p) * float(recall[class_label])) / (float(p) + float(recall[class_label])))
@@ -163,7 +163,7 @@ def getFBetaScore(counters, beta):
     f_beta_score = {}
     # Compute the F-beta score for each class
     for class_label, p in precision.items():
-        if p == 0 or recall[class_label] == 0:
+        if float(p) == 0 or float(recall[class_label]) == 0:
             f_beta_score[class_label] = 0
         else:
             f_beta_score[class_label] = "{:.4f}".format((1 + beta**2) * (float(p) * float(recall[class_label])) / ((beta**2 * float(p)) + float(recall[class_label])))
