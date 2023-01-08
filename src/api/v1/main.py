@@ -12,6 +12,7 @@ import numpy as np
 import visualkeras as vk
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "main")))
+
 from mutation_operators import NeuronLevel
 from mutation_operators import EdgeLevel
 from operator_utils import WeightUtils
@@ -246,7 +247,7 @@ def get_edge_layers(modelId: str):
     return json.dumps(layer_names)
 
 
-# GET request to retrieve all the trainable weights of a all layers in a specific model
+# GET request to retrieve all the trainable weights of a layers in a specific model
 @app.get("/all-weights/{modelId}/{layerName}")
 def get_weights(modelId: str, layerName: str):
     # If modelId is passed as Mutant, we have to load mutant
@@ -292,7 +293,7 @@ def getKernelWeights(modelId: str, layerName: str, kernel: int):
     return jt.dumps(kernel_weights)
 
 
-# GET request to retrieve all the weights of a specific kernel in a specific layer of a specific model
+# GET request to retrieve all the weights of a All kernel in a specific layer of a specific model
 @app.get("/all-kernel-weights/{modelId}/{layerName}")
 def getAllKernelWeights(modelId: str, layerName: str):
     # If modelId is passed as Mutant, we have to load mutant

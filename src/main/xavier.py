@@ -16,11 +16,11 @@ from tensorflow.keras.optimizers import Adam
 
 if __name__ == '__main__':
     #place a hashtag before next line to enter/leave playground
-    """"
+    #""""
     #Playground
     #Lenet5_generator = Lenet5_generator()
     #Lenet5_generator.generate_model()
-    model = tf.keras.models.load_model("../models/model.h5")
+    model = tf.keras.models.load_model("../models/mutant.h5")
     model.summary()
     (train_X, train_y), (test_X, test_y) = mnist.load_data()
     # Convert into Numpy Arrays
@@ -28,9 +28,7 @@ if __name__ == '__main__':
     train_y = np.asarray(train_y)
     prediction = model.predict(test_X)
     layers = Model_layers()
-    pa.getAllMetrics(pa.getConfusionMatrix(prediction, test_y),1.0)
-    print(layers.getNeuronLayers(model))
-    print(layers.getEdgeLayers(model))
+    pa.getAllMetrics(pa.getConfusionMatrix(prediction, test_y),0.5)
     """
 
     """#Functionality
@@ -96,10 +94,10 @@ if __name__ == '__main__':
         #convOperator.changeNeuron(model,layerName, row,column, kernel)
     elif layerName[0] == 'd':
         # Uncomment Neuron Here
-        #denseOperator.changeNeuron(model, "dense",0,0, -2)
-        #denseOperator.blockNeuron(model, "dense",0,0)
-        #denseOperator.invertNeuron(model, "dense",0,0)
-        denseOperator.additive_inverse(model, "dense",0,0)
+        denseOperator.changeEdge(model, "dense",83,9, 789.0)
+        #denseOperator.blockEdge(model, "dense_2",83,9)
+        #denseOperator.invertEdge(model, "dense",0,0)
+        #denseOperator.additive_inverse(model, "dense",0,0)
         #denseOperator.mul_inverse(model, "dense",0,0)
 
     # Generate Classification report of Original Model
@@ -107,7 +105,7 @@ if __name__ == '__main__':
     counters = pa.getConfusionMatrix(prediction, test_y)
     pa.printConfusionMatrix(prediction, test_y)
 
-    pa.printClassificationReport(counters, 1.0)
+    pa.printClassificationReport(counters, 1.5)
 
     print("Accuracy: ", pa.getModelAccuracy(counters))
 

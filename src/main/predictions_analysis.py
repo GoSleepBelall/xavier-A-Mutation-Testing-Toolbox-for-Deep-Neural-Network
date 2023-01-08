@@ -138,6 +138,8 @@ def getF1Score(counters):
     recall = getRecall(counters)
     f1_score = {}
     for class_label, p in precision.items():
+        if p == 0 or recall[class_label] == 0:
+            f1_score[class_label] = 0
         f1_score[class_label] = "{:.4f}".format(2 * (float(p) * float(recall[class_label])) / (float(p) + float(recall[class_label])))
     return f1_score
 
