@@ -163,7 +163,10 @@ def getFBetaScore(counters, beta):
     f_beta_score = {}
     # Compute the F-beta score for each class
     for class_label, p in precision.items():
-        f_beta_score[class_label] = "{:.4f}".format((1 + beta**2) * (float(p) * float(recall[class_label])) / ((beta**2 * float(p)) + float(recall[class_label])))
+        if p == 0 or recall[class_label] == 0:
+            f_beta_score[class_label] = 0
+        else:
+            f_beta_score[class_label] = "{:.4f}".format((1 + beta**2) * (float(p) * float(recall[class_label])) / ((beta**2 * float(p)) + float(recall[class_label])))
 
     return f_beta_score
 
