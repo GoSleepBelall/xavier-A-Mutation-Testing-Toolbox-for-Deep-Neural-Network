@@ -184,20 +184,18 @@ def getAllMetrics(counters, beta):
     f1_score = getF1Score(counters)
     auc = getAuc(counters)
     f_beta = getFBetaScore(counters, beta)
-    for class_label in range(10):
-        class_results = {
-            'accuracy': accuracy[class_label],
-            'specificity': specificity[class_label],
-            'sensitivity': sensitivity[class_label],
-            'precision': precision[class_label],
-            'recall': recall[class_label],
-            'f1_score': f1_score[class_label],
-            'AUC': auc[class_label],
-            'F_beta': f_beta[class_label]
-        }
-        results[class_label] = class_results
-
-    return results
+    #for class_label in range(10):
+    class_results = {
+        'accuracy': accuracy,
+        'specificity': specificity,
+        'sensitivity': sensitivity,
+        'precision': precision,
+        'recall': recall,
+        'f1_score': f1_score,
+        'AUC': auc,
+        'F_beta': f_beta
+    }
+    return class_results
 
 
 def printClassificationReport(counters, beta):

@@ -22,7 +22,13 @@ if __name__ == '__main__':
     #Lenet5_generator.generate_model()
     model = tf.keras.models.load_model("../models/model.h5")
     model.summary()
+    (train_X, train_y), (test_X, test_y) = mnist.load_data()
+    # Convert into Numpy Arrays
+    train_X = np.asarray(train_X)
+    train_y = np.asarray(train_y)
+    prediction = model.predict(test_X)
     layers = Model_layers()
+    pa.getAllMetrics(pa.getConfusionMatrix(prediction, test_y),1.0)
     print(layers.getNeuronLayers(model))
     print(layers.getEdgeLayers(model))
     """

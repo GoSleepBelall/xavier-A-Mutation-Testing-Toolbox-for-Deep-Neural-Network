@@ -166,7 +166,7 @@ def getReport(modelId: str, beta: float = 1):
     predictions = model_var.predict(test_X)
     matrix = pa.getConfusionMatrix(predictions, test_y)
     class_metrics = pa.getAllMetrics(matrix, beta)
-    return json.dumps(class_metrics)
+    return json.dumps([{str(k): {str(inner_k): inner_v for inner_k, inner_v in v.items()}} for k, v in class_metrics.items()])
 
 # GET request to retrieve accuracy of a specific model
 @app.get("/auc/{modelId}")
