@@ -104,12 +104,12 @@ if __name__ == '__main__':
 
     # Generate Classification report of Original Model
     prediction = model.predict(test_X)
-
+    counters = pa.getConfusionMatrix(prediction, test_y)
     pa.printConfusionMatrix(prediction, test_y)
 
-    pa.printClassificationReport(prediction, test_y, 1.0)
+    pa.printClassificationReport(counters, 1.0)
 
-    print("Accuracy: ", pa.getModelAccuracy(prediction, test_y))
+    print("Accuracy: ", pa.getModelAccuracy(counters))
 
 
     # Check Accuracy again

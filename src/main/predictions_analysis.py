@@ -200,20 +200,21 @@ def getAllMetrics(counters, beta):
 
 def printClassificationReport(counters, beta):
     table = PrettyTable()
-    table.field_names = ['Class', 'Accuracy', 'Specificity', 'Sensitivity', 'recall', 'precision', 'f1-score', 'AUC', "F-Beta"]
-
+    table.field_names = ['Class','0','1','2','3','4','5','6','7','8','9']
     metrics = getAllMetrics(counters, beta)
     for class_label, class_metrics in metrics.items():
         table.add_row(
             [class_label,
-             class_metrics['accuracy'],
-             class_metrics['specificity'],
-             class_metrics['sensitivity'],
-             class_metrics['recall'],
-             class_metrics['precision'],
-             class_metrics['f1_score'],
-             class_metrics['AUC'],
-             class_metrics['F_beta']
+             class_metrics[0],
+             class_metrics[1],
+             class_metrics[2],
+             class_metrics[3],
+             class_metrics[4],
+             class_metrics[5],
+             class_metrics[6],
+             class_metrics[7],
+             class_metrics[8],
+             class_metrics[9]
              ])
     print(table)
 
