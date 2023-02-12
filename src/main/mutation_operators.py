@@ -6,7 +6,7 @@ class NeuronLevel:
     weights = WeightUtils()
 
     neuronLevelMutationOperatorslist = ["Change Neuron", "Block Neuron", "Multiplicative Inverse", "Additive Inverse", "Invert Neuron"]
-    neuronLevelMutationOperatorshash = {"change-neuron": "Change Neuron", "block-neuron": "Block Neuron", "mul-inverse-neuron": "Multiplicative Inverse", "additive-inverse-neuron": "Additive Inverse", "invert-neuron": "Invert Neuron"}
+    neuronLevelMutationOperatorshash = {"change-neuron": "Change Neuron", "block-neuron": "Block Neuron", "mul-inverse-neuron": "Multiplicative Inverse", "additive-inverse-neuron": "Additive Inverse"}
     neuronLevelMutationOperatorsDescription = ["It changes the value of specified neuron to the given value",
                                                "It blocks the effect of Neuron by replacing it with 0",
                                                "It replace the value of a neuron with Multiplicative inverse of it's current value",

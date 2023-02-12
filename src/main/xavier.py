@@ -10,6 +10,7 @@ from tensorflow.keras.datasets import mnist
 from tensorflow import keras
 import numpy as np
 from tensorflow.keras.optimizers import Adam
+import pg_adapter
 
 
 
@@ -21,6 +22,7 @@ if __name__ == '__main__':
     #Lenet5_generator = Lenet5_generator()
     #Lenet5_generator.generate_model()
     model = tf.keras.models.load_model("../models/mutant.h5")
+    connection = pg_adapter.PgAdapter.get_instance().connection
     model.summary()
     (train_X, train_y), (test_X, test_y) = mnist.load_data()
     # Convert into Numpy Arrays
