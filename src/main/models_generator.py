@@ -17,12 +17,6 @@ class Lenet5Generator:
     This class will create a LENET-5model, train it on MNIST and save it files as xavier-lenet5.h5
     """
     def generate_model(self):
-        # Load Data
-        (train_X, train_y), (test_X, test_y) = mnist.load_data()
-        # Convert into Numpy Arrays
-        train_X = np.asarray(train_X)
-        train_y = np.asarray(train_y)
-
         # Create Traditional Model LENET-5
         model = Sequential([
             Conv2D(filters=6, kernel_size=(5, 5), activation='tanh', input_shape=(28, 28, 1), padding="same"),
@@ -40,7 +34,14 @@ class Lenet5Generator:
         # Note: I don't exactly remember now (11 Dec 2022) why I used this specific loss function.
         model.compile(optimizer=Adam(learning_rate=0.0001), loss='sparse_categorical_crossentropy',
                       metrics=['accuracy'])
+        return model
 
+    def train_moel(self, model):
+        # Load Data
+        (train_X, train_y), (test_X, test_y) = mnist.load_data()
+        # Convert into Numpy Arrays
+        train_X = np.asarray(train_X)
+        train_y = np.asarray(train_y)
 
         # Train The Model
         # Parameters
@@ -48,9 +49,10 @@ class Lenet5Generator:
         # y = labeled data (target data)
         # epochs = It will run the whole data 10 times before complete training
         # Additional Parameters that can be used
-        # batch_size = it will take 10 inputs in an iteration
+        # batch_size = e.g, it will take 10 inputs in an iteration
         # shuffle = shuffle the data in respective order
         # verbose = an option to allow to see the output
+
         model.fit(x=train_X, y=train_y, epochs=2)
         model.evaluate(test_X, test_y)
 

@@ -10,19 +10,19 @@ from tensorflow.keras.datasets import mnist
 from tensorflow import keras
 import numpy as np
 from tensorflow.keras.optimizers import Adam
-import pg_adapter
+#import pg_adapter
 
 
 
 
 if __name__ == '__main__':
     #place a hashtag before next line to enter/leave playground
-    #""""
+    """" <---- here
     #Playground
     #Lenet5_generator = Lenet5_generator()
     #Lenet5_generator.generate_model()
     model = tf.keras.models.load_model("../models/mutant.h5")
-    connection = pg_adapter.PgAdapter.get_instance().connection
+    #connection = pg_adapter.PgAdapter.get_instance().connection
     model.summary()
     (train_X, train_y), (test_X, test_y) = mnist.load_data()
     # Convert into Numpy Arrays
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     train_y = np.asarray(train_y)
     prediction = model.predict(test_X)
     layers = Model_layers()
-    pa.getAllMetrics(pa.getConfusionMatrix(prediction, test_y),0.5)
+    print(pa.getAllMetrics(pa.getConfusionMatrix(prediction, test_y),1))
     """
 
     """#Functionality
@@ -88,17 +88,17 @@ if __name__ == '__main__':
     value = 0
     if layerName[0] == 'c':
         #Uncomment Neuron Here
-        convOperator.changeNeuron(model,layerName, row,column, kernel, value)
+        #convOperator.changeNeuron(model,layerName, row,column, kernel, value)
         #convOperator.additive_inverse(model,layerName, row,column, kernel)
-        #convOperator.mul_inverse(model,layerName, row,column, kernel)
+        convOperator.mul_inverse(model,layerName, row,column, kernel)
         #convOperator.invertNeuron(model,layerName, row,column, kernel)
         #convOperator.blockNeuron(model,layerName, row,column, kernel)
         #convOperator.changeNeuron(model,layerName, row,column, kernel)
     elif layerName[0] == 'd':
         # Uncomment Neuron Here
-        denseOperator.changeEdge(model, "dense",83,9, 789.0)
+        #denseOperator.changeEdge(model, "dense",83,9, 789.0)
         #denseOperator.blockEdge(model, "dense_2",83,9)
-        #denseOperator.invertEdge(model, "dense",0,0)
+        denseOperator.invertEdge(model, "dense",0,0)
         #denseOperator.additive_inverse(model, "dense",0,0)
         #denseOperator.mul_inverse(model, "dense",0,0)
 
