@@ -48,8 +48,8 @@ def create_samples(k):
     return training_data, training_data_labels, testing_data, testing_data_labels
 
 def train_all_models(k, training_data, training_data_labels):
+    m_gnrtr = Lenet5Generator()
     for i in range(k):
-        m_gnrtr = Lenet5Generator()
         model = m_gnrtr.generate_model()
         model.fit(x=training_data[i], y=training_data_labels[i], batch_size=32, epochs=2)
         filename = "../models/P_{}.h5".format(i)
@@ -87,9 +87,9 @@ def mutation_killing(k):
     # Firstly We Create Random Samples from union of Testing and Training Data
     training_data, training_data_labels, testing_data, testing_data_labels = create_samples(k)
     # Then we train models for all those samples
-    train_all_models(5, training_data, training_data_labels)
+    train_all_models(k, training_data, training_data_labels)
     # Then Mutants are created from all those models
-    create_mutants(5,"NULL","conv2d", 0,0,1)
+    create_mutants(k,"NULL","conv2d", 0,0,1)
     # Then we Got Accuracies for all the models and mutants
     accuracy_model, accuracy_mutant = get_accuracies(k, testing_data, testing_data_labels)
     # Then we performed T-test for the distribution for p value we got
