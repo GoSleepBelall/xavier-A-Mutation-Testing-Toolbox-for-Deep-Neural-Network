@@ -47,11 +47,11 @@ class NeuronLevel:
         print("value of neuron from kernel number ", kernel, " at row ", row, " and column ", column, " is inverted")
 
 
-class EdgeLevel:
+class WeightLevel:
     # Composition
     weights = WeightUtils()
 
-    edgeLevelMutationOperatorslist = ["Change Edge", "Block Edge", "Multiplicative Inverse", "Additive Inverse", "Invert Edge"]
+    edgeLevelMutationOperatorslist = ["Change Edge", "Block Edge", "Multiplicative Inverse Edge", "Additive Inverse Edge", "Invert Edge"]
     edgeLevelMutationOperatorsDescription = ["It changes the value of specified Edge connecting two neurons",
                                                "It blocks the effect of Edge by replacing it with 0",
                                                "It replace the value of a Edge with Multiplicative inverse of it's current value",

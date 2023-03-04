@@ -14,7 +14,7 @@ import visualkeras as vk
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "main")))
 
 from mutation_operators import NeuronLevel
-from mutation_operators import EdgeLevel
+from mutation_operators import WeightLevel
 from operator_utils import WeightUtils
 from operator_utils import Model_layers
 import predictions_analysis as pa
@@ -23,7 +23,7 @@ app = FastAPI(title="XAVIER-API", description="A Mutation Testing Toolbox.", ver
 layers = Model_layers()
 weights = WeightUtils()
 NeuronOperator = NeuronLevel()
-EdgeOperator = EdgeLevel()
+EdgeOperator = WeightLevel()
 
 # Read the models globally
 
