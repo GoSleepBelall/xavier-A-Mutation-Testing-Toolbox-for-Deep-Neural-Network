@@ -25,11 +25,30 @@ import mutation_killing as mk
 
 
 app = FastAPI(title="XAVIER-API", description="A Mutation Testing Toolbox.", version="2.0")
+
+#Todo: Integrate your models here
+
+lenet5 = models.load_model("../../models/xavier-lenet5.h5")
+# A global dictionary mapping model names to model objects
+model_dict = {
+    'lenet5': lenet5
+}
+
+
 layers = Model_layers()
 weights = WeightUtils()
 NeuronOperator = NeuronLevel()
 EdgeOperator = WeightLevel()
 
+# Constructor for safe load of object coming from database
+def int_constructor(loader, node):
+    value = loader.construct_scalar(node)
+    if isinstance(value, str) and value.isdigit():
+        return int(value)
+    else:
+        return value
+
+yaml.SafeLoader.add_constructor('tag:yaml.org,2002:int', int_constructor)
 
 # Dataset for Lenet
 (train_X, train_y), (test_X, test_y) = mnist.load_data()
@@ -40,6 +59,12 @@ cur = conn.cursor()
 def run(projectId: int):
     cur.execute("SELECT * FROM PROJECTS where id = %s", (projectId,))
     result = cur.fetchone()
+    if not result:
+        raise HTTPException(status_code=404, detail="Project Not Found")
+
+    elif result[7] == 2:
+        raise HTTPException(status_code=200, detail="Project already executed Successfully")
+
     id = result[0]
     user_id = result[1]
     name = result[2]
@@ -60,7 +85,7 @@ def run(projectId: int):
                 SET results = %s, status = %s
                 WHERE id = %s
                 RETURNING id
-            """, (json.dumps(results), 1, projectId))
+            """, (json.dumps(results), 2, projectId))
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -256,51 +281,93 @@ def getFBetaScore(tableName: str, modelId: int, projectId: int, beta: float = 1.
     return json.dumps({str(k): v for k, v in f_beta_score.items()})
 
 # GET request to retrieve all the layers in a specific model
-@app.get("/layers/{tableName}/{modelId}/{projectId}")
-def get_layers(tableName: str, modelId: int, projectId: int):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
-    # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
-    model_bytes = cur.fetchone()[0]
-    if not model_bytes:
-        raise HTTPException(status_code=404, detail="Model not found")
-    # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
-    layer_names = layers.getLayerNames(model)
+@app.get("/layers/{modelId}")
+def get_layers(modelId: str):
+    # Get the model object from the dictionary
+    model_var = model_dict.get(modelId)
+    layer_names = layers.getLayerNames(model_var)
     return json.dumps(layer_names)
 
-
 # GET request to retrieve all the layers on which Neuron level Mutation Operators are applicable
-@app.get("/neuron_layers/{tableName}/{modelId}/{projectId}")
-def get_neuron_layers(tableName: str, modelId: int, projectId: int):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
-    # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
-    model_bytes = cur.fetchone()[0]
-    if not model_bytes:
-        raise HTTPException(status_code=404, detail="Model not found")
-    # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
-    layer_names = layers.getNeuronLayers(model)
+@app.get("/neuron_layers/{modelId}")
+def get_neuron_layers(modelId: str):
+    # Get the model object from the dictionary
+    model_var = model_dict.get(modelId)
+    layer_names = layers.getNeuronLayers(model_var)
     return json.dumps(layer_names)
 
 # GET request to retrieve all the layers on which Edge level Mutation Operators are applicable
-@app.get("/edge-layers/{tableName}/{modelId}/{projectId}")
-def get_edge_layers(tableName: str, modelId: int, projectId: int):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
-    # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
-    model_bytes = cur.fetchone()[0]
-    if not model_bytes:
-        raise HTTPException(status_code=404, detail="Model not found")
-    # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
-    layer_names = layers.getEdgeLayers(model)
+@app.get("/edge-layers/{modelId}")
+def get_edge_layers(modelId: str):
+     # Get the model object from the dictionary
+    model_var = model_dict.get(modelId)
+    layer_names = layers.getEdgeLayers(model_var)
     return json.dumps(layer_names)
+# Todo: >>>>>>>>>>>>>>>>>>    START    >>>>>>>>>>>>>>>>>>>>>>>.
+# Todo: Temporarily making these API calls for testing
+# Todo: This page will be deleted soon
+# Todo: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>.
 
+
+# GET request to retrieve all the trainable weights of a layers in a specific model
+@app.get("/all-weights/{modelId}/{layerName}")
+def get_weights_temp(modelId: str, layerName: str):
+    # Get the model object from the dictionary
+    model_var = model_dict.get(modelId)
+    trainable_weights = weights.GetWeights(model_var, layerName)
+    result = trainable_weights.tolist()
+    return jt.dumps(result)
+
+
+# GET request to retrieve all the weights of a specific kernel in a specific layer of a specific model
+@app.get("/kernel-weights/{modelId}/{layerName}/{kernel}")
+def getKernelWeights_temp(modelId: str, layerName: str, kernel: int):
+
+    # Get the model object from the dictionary
+    model_var = model_dict.get(modelId)
+    # Get the names of the layers on which neuron level operators are applicable
+    neuron_layers = layers.getNeuronLayers(model_var)
+    if layerName not in neuron_layers:
+        raise HTTPException(status_code=500, detail=("Invalid layer"))
+
+    # Get Trainable Weights
+    trainable_weights = weights.GetWeights(model_var, layerName)
+
+    # Get Kernel wise weights from all weights
+    kernel_weights = weights.getKernelWeights(trainable_weights, kernel)
+    return jt.dumps(kernel_weights)
+
+
+# GET request to retrieve all the weights of a All kernel in a specific layer of a specific model
+@app.get("/all-kernel-weights/{modelId}/{layerName}")
+def getAllKernelWeights_temp(modelId: str, layerName: str):
+
+    # Get the model object from the dictionary
+    model_var = model_dict.get(modelId)
+
+    # Get the names of the layers on which neuron level operators are applicable
+    neuron_layers = layers.getNeuronLayers(model_var)
+
+    if layerName not in neuron_layers:
+        raise HTTPException(status_code=500, detail=("Invalid layer"))
+
+    # Get Trainable Weights
+    trainable_weights = weights.GetWeights(model_var, layerName)
+
+    # Get Kernel wise weights from all weights
+    kernel_weights = []
+    total = layers.getKernelNumbers(model_var, layerName)
+    for kernel in range(total):
+        kernel_weights.append(weights.getKernelWeights(trainable_weights, kernel))
+    return jt.dumps(kernel_weights)
+
+
+
+
+# Todo: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>.
+# Todo: Temporarily making these API calls for testing
+# Todo: This page will be deleted soon
+# Todo: >>>>>>>>>>>>>>>>>>>     END     >>>>>>>>>>>>>>>>>>>>>>>>>.
 
 # GET request to retrieve all the trainable weights of a layers in a specific model
 @app.get("/all-weights/{tableName}/{modelId}/{projectId}/{layerName}")
@@ -376,25 +443,18 @@ def getAllKernelWeights(tableName: str, modelId: int, projectId: int, layerName:
     return jt.dumps(kernel_weights)
 
 # GET request to retrieve number of kernels present in a layer
-@app.get("/kernel/{tableName}/{modelId}/{projectId}/{layerName}")
-def getKernelNum(tableName: str, modelId: int, projectId: int, layerName: str):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
-    # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
-    model_bytes = cur.fetchone()[0]
-    if not model_bytes:
-        raise HTTPException(status_code=404, detail="Model not found")
-    # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+@app.get("/kernel/{modelId}/{layerName}")
+def getKernelNum(modelId: str, layerName: str):
 
+    # Get the model object from the dictionary
+    model_var = model_dict.get(modelId)
     # Get the names of the layers on which neuron level operators are applicable
-    neuron_layers = layers.getNeuronLayers(model)
+    neuron_layers = layers.getNeuronLayers(model_var)
 
     if layerName not in neuron_layers:
         raise HTTPException(status_code=500, detail=("Invalid layer"))
 
-    return json.dumps(layers.getKernelNumbers(model, layerName))
+    return json.dumps(layers.getKernelNumbers(model_var, layerName))
 
 
 # GET request to retrieve List of Mutation Operators present
@@ -403,7 +463,7 @@ def getMutationOperatorsList(operatortype: int):
     if operatortype == 1:
         return json.dumps(NeuronLevel.neuronLevelMutationOperatorshash)
     elif operatortype == 2:
-        return json.dumps(EdgeLevel.edgeLevelMutationOperatorslist)
+        return json.dumps(WeightLevel.weightLevelMutationOperatorsList)
     else:
         raise HTTPException(status_code=500, detail=("Invalid Operator Type"))
 
@@ -415,24 +475,17 @@ def getMutationOperatorsDescription(operatortype: int):
     if operatortype == 1:
         return jt.dumps(NeuronLevel.neuronLevelMutationOperatorsDescription)
     elif operatortype == 2:
-        return jt.dumps(EdgeLevel.edgeLevelMutationOperatorsDescription)
+        return jt.dumps(WeightLevel.weightLevelMutationOperatorsDescription)
     else:
         raise HTTPException(status_code=500, detail=("Invalid Operator Type"))
 
 
-@app.get("/model-image/{tableName}/{modelId}/{projectId}")
-def get_model_image(tableName: str, modelId: int, projectId: int):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
-    # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
-    model_bytes = cur.fetchone()[0]
-    if not model_bytes:
-        raise HTTPException(status_code=404, detail="Model not found")
-    # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+@app.get("/model-image/{modelId}")
+def get_model_image(modelId: str):
 
-    image = vk.layered_view(model, legend=True)
+    # Get the model object from the dictionary
+    model_var = model_dict.get(modelId)
+    image = vk.layered_view(model_var, legend=True)
     image.save("../../supporting files/model.png")
     with open("../../supporting files/model.png", "rb") as f:
         return Response(content=f.read(), media_type="image/png")

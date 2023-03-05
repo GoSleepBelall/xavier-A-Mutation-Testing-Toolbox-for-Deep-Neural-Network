@@ -351,7 +351,7 @@ def getMutationOperatorsList(operatortype: int):
     if operatortype == 1:
         return json.dumps(NeuronLevel.neuronLevelMutationOperatorshash)
     elif operatortype == 2:
-        return json.dumps(EdgeLevel.edgeLevelMutationOperatorslist)
+        return json.dumps(EdgeLevel.weightLevelMutationOperatorsList)
     else:
         raise HTTPException(status_code=500, detail=("Invalid Operator Type"))
 
@@ -363,7 +363,7 @@ def getMutationOperatorsDescription(operatortype: int):
     if operatortype == 1:
         return jt.dumps(NeuronLevel.neuronLevelMutationOperatorsDescription)
     elif operatortype == 2:
-        return jt.dumps(EdgeLevel.edgeLevelMutationOperatorsDescription)
+        return jt.dumps(EdgeLevel.weightLevelMutationOperatorsDescription)
     else:
         raise HTTPException(status_code=500, detail=("Invalid Operator Type"))
 

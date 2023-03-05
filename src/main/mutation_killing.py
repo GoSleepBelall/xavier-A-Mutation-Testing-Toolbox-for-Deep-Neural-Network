@@ -40,9 +40,9 @@ def create_samples(k):
     testing_data = []
     training_data_labels = []
     testing_data_labels = []
-
+    i = int(k)
     # create k random samples
-    for i in range(k):
+    for i in range(i):
         # randomly permute the indices of total_X and total_Y
         permuted_indices = np.random.permutation(len(total_X))
 
@@ -80,7 +80,13 @@ def train_all_models(projectId, training_data, training_data_labels, testing_dat
     conv_operator = NeuronLevel()
     accuracy_model = []
     accuracy_mutant = []
-    for i in range(hyper_params['k_value']):
+    k_value = hyper_params['k_value']
+    if k_value.isdigit():
+        loop = int(k_value)
+    else:
+        # handle the case where k_value is not a valid integer
+        print("Error: k_value must be a valid integer")
+    for i in range(loop):
         matrices_original = {'accuracy': 0}
         matrices_mutant = {'accuracy': 0}
         K.clear_session()
@@ -94,41 +100,42 @@ def train_all_models(projectId, training_data, training_data_labels, testing_dat
 
         # Apply Mutation Operator
         if hyper_params['operator_type'] == 'neuron_level':
+
             if hyper_params['operator_params']['operator'] == "change-neuron":
                 conv_operator.changeNeuron(mutant,
                                           hyper_params['layer'],
-                                          hyper_params['operator_params']['modal_row'],
-                                          hyper_params['operator_params']['modal_col'],
-                                          hyper_params['operator_params']['modal_kernel'],
-                                          hyper_params['operator_params']['op_value'])
+                                          int(hyper_params['operator_params']['modal_row']),
+                                          int(hyper_params['operator_params']['modal_col']),
+                                          int(hyper_params['operator_params']['modal_kernel']),
+                                          int(hyper_params['operator_params']['op_value']))
 
             elif hyper_params['operator_params']['operator'] == "block-neuron":
                 conv_operator.blockNeuron(mutant,
                                           hyper_params['layer'],
-                                          hyper_params['operator_params']['modal_row'],
-                                          hyper_params['operator_params']['modal_col'],
-                                          hyper_params['operator_params']['modal_kernel'])
+                                          int(hyper_params['operator_params']['modal_row']),
+                                          int(hyper_params['operator_params']['modal_col']),
+                                          int(hyper_params['operator_params']['modal_kernel']))
 
             elif hyper_params['operator_params']['operator'] == "mul-inverse-neuron":
                 conv_operator.mul_inverse(mutant,
                                           hyper_params['layer'],
-                                          hyper_params['operator_params']['modal_row'],
-                                          hyper_params['operator_params']['modal_col'],
-                                          hyper_params['operator_params']['modal_kernel'])
+                                          int(hyper_params['operator_params']['modal_row']),
+                                          int(hyper_params['operator_params']['modal_col']),
+                                          int(hyper_params['operator_params']['modal_kernel']))
 
             elif hyper_params['operator_params']['operator'] == "additive-inverse-neuron":
                 conv_operator.additive_inverse(mutant,
                                           hyper_params['layer'],
-                                          hyper_params['operator_params']['modal_row'],
-                                          hyper_params['operator_params']['modal_col'],
-                                          hyper_params['operator_params']['modal_kernel'])
+                                          int(hyper_params['operator_params']['modal_row']),
+                                          int(hyper_params['operator_params']['modal_col']),
+                                          int(hyper_params['operator_params']['modal_kernel']))
 
             elif hyper_params['operator_params']['operator'] == "invert-neuron":
                 conv_operator.invertNeuron(mutant,
                                           hyper_params['layer'],
-                                          hyper_params['operator_params']['modal_row'],
-                                          hyper_params['operator_params']['modal_col'],
-                                          hyper_params['operator_params']['modal_kernel'])
+                                          int(hyper_params['operator_params']['modal_row']),
+                                          int(hyper_params['operator_params']['modal_col']),
+                                          int(hyper_params['operator_params']['modal_kernel']))
 
         # Get Accuracies of Model
         prediction = model.predict(testing_data[i])
@@ -273,7 +280,7 @@ def mutation_killing(projectId, hyper_params):
         SET results = %s, status = %s
         WHERE id = %s
         RETURNING id
-    """, (json.dumps(results), 1, projectId))
+    """, (json.dumps(results), 2, projectId))
 
     updated_id = cur.fetchone()[0]
     print(updated_id)
@@ -281,31 +288,32 @@ def mutation_killing(projectId, hyper_params):
 
 
 
-hyper_params = {
-"operator_type": "neuron_level",
-"model": "lenet5",
-"k_value": 5,
-"layer": "conv2d",
-"operator_params": {
-    "modal_kernel": 0,
-    "modal_row": 2,
-    "modal_col": 0,
-    "operator": "block-neuron",
-    "op_value": ""
-    }
-}
-# mutation_killing(1, hyper_params )
+# hyper_params = {
+# "operator_type": "neuron_level",
+# "model": "lenet5",
+# "k_value": 5,
+# "layer": "conv2d",
+# "operator_params": {
+#     "modal_kernel": 0,
+#     "modal_row": 2,
+#     "modal_col": 0,
+#     "operator": "block-neuron",
+#     "op_value": ""
+#     }
+# }
+
+# Constructor for safe load of object coming from database
+def int_constructor(loader, node):
+    value = loader.construct_scalar(node)
+    if isinstance(value, str) and value.isdigit():
+        return int(value)
+    else:
+        return value
+
+yaml.SafeLoader.add_constructor('tag:yaml.org,2002:int', int_constructor)
+
+hp = "---\noperator_type: neuron_level\nmodel: lenet5\nk_value: '5'\nlayer: conv2d\noperator_params:\n  modal_kernel: '0'\n  modal_row: '1'\n  modal_col: '1'\n  operator: mul-inverse-neuron\n  op_value: ''\n"
+hyper_params = yaml.safe_load(hp)
+mutation_killing(6, hyper_params )
 
 
-
-"""
-# Select the model bytes from the database
-cur.execute("SELECT * FROM PROJECTS where id = %s", (1,))
-result = cur.fetchone()
-id = result[0]
-user_id = result[1]
-name = result[2]
-desc = result[3]
-hyper_params = yaml.safe_load(result[4])
-
-"""
