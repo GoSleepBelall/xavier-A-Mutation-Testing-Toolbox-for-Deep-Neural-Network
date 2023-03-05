@@ -285,6 +285,7 @@ def mutation_killing(projectId, hyper_params):
     updated_id = cur.fetchone()[0]
     print(updated_id)
     conn.commit()
+    return
 
 
 
@@ -310,10 +311,17 @@ def int_constructor(loader, node):
     else:
         return value
 
-yaml.SafeLoader.add_constructor('tag:yaml.org,2002:int', int_constructor)
+#yaml.SafeLoader.add_constructor('tag:yaml.org,2002:int', int_constructor)
 
-hp = "---\noperator_type: neuron_level\nmodel: lenet5\nk_value: '5'\nlayer: conv2d\noperator_params:\n  modal_kernel: '0'\n  modal_row: '1'\n  modal_col: '1'\n  operator: mul-inverse-neuron\n  op_value: ''\n"
-hyper_params = yaml.safe_load(hp)
-mutation_killing(6, hyper_params )
+#hp = "---\noperator_type: neuron_level\nmodel: lenet5\nk_value: '5'\nlayer: conv2d\noperator_params:\n  modal_kernel: '0'\n  modal_row: '1'\n  modal_col: '1'\n  operator: mul-inverse-neuron\n  op_value: ''\n"
+#hyper_params = yaml.safe_load(hp)
+#mutation_killing(6, hyper_params )
+modelId = 106
+projectId = 7
+tableName = "original_models"
+query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+cur.execute(query,(modelId, projectId,))
+result = cur.fetchone()
+print(result)
 
 

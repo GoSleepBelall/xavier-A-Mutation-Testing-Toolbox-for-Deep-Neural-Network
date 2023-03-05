@@ -6,12 +6,15 @@ import sys
 import os
 import json_tricks as jt
 import json
+from tensorflow import keras
 from keras import models
 from tensorflow.keras.datasets import mnist
 from datetime import datetime
 import numpy as np
 import yaml
 import visualkeras as vk
+import pickle
+
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "main")))
 
@@ -55,6 +58,8 @@ yaml.SafeLoader.add_constructor('tag:yaml.org,2002:int', int_constructor)
 
 conn = PgAdapter.get_instance().connection
 cur = conn.cursor()
+
+
 @app.get("/run/{projectId}")
 def run(projectId: int):
     cur.execute("SELECT * FROM PROJECTS where id = %s", (projectId,))
@@ -74,7 +79,7 @@ def run(projectId: int):
         raise HTTPException(status_code=400, detail="Value of k must be greater than or equals to 5")
     try:
         # Fetching data
-        mk.mutation_killing(projectId, hyper_params)
+        mk.mutation_killing(secondId, hyper_params)
         return {"message": "Project Successfully Completed"}
     except Exception as e:
         results = {
@@ -85,57 +90,71 @@ def run(projectId: int):
                 SET results = %s, status = %s
                 WHERE id = %s
                 RETURNING id
-            """, (json.dumps(results), 2, projectId))
+            """, (json.dumps(results), 2, secondId))
         raise HTTPException(status_code=500, detail=str(e))
 
 
 
 # GET request to retrieve confusion matirx for a specific model
-@app.get("/confusion-matrix/{tableName}/{modelId}/{projectId}")
-def getConfusionMatrix(tableName: str, modelId: int, projectId: int):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
+@app.get("/confusion-matrix/{tableName}/{modelId}/{secondId}")
+def getConfusionMatrix(tableName: str, modelId: int, secondId: int):
     # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query,(modelId, secondId,))
     model_bytes = cur.fetchone()[0]
     if not model_bytes:
         raise HTTPException(status_code=404, detail="Model not found")
     # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+    model = pickle.loads(model_bytes)
     prediction = model.predict(test_X)
     matrix = pa.getConfusionMatrix(prediction, test_y)
     return json.dumps({str(k): v for k, v in matrix.items()})
 
 # GET request to retrieve accuracy for a specific model clas wise
-@app.get("/class-accuracy/{tableName}/{modelId}/{projectId}")
-def getAccuracy(tableName: str, modelId: int, projectId: int):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
+@app.get("/class-accuracy/{tableName}/{modelId}/{secondId}")
+def getAccuracy(tableName: str, modelId: int, secondId: int):
     # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
+    # Select the model bytes from the database
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query,(modelId, secondId,))
     model_bytes = cur.fetchone()[0]
     if not model_bytes:
         raise HTTPException(status_code=404, detail="Model not found")
     # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
 
+    model = pickle.loads(model_bytes)
     prediction = model.predict(test_X)
     matrix = pa.getConfusionMatrix(prediction, test_y)
     accuracy = pa.getAccuracy(matrix)
     return json.dumps({str(k): v for k, v in accuracy.items()})
 
 # GET request to retrieve accuracy of a specific model
-@app.get("/model-accuracy/{tableName}/{modelId}/{projectId}")
-def getModelAccuracy(tableName: str, modelId: int, projectId: int):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
+@app.get("/model-accuracy/{tableName}/{modelId}/{secondId}")
+def getModelAccuracy(tableName: str, modelId: int, secondId: int):
     # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
+    # Select the model bytes from the database
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query,(modelId, secondId,))
     model_bytes = cur.fetchone()[0]
     if not model_bytes:
         raise HTTPException(status_code=404, detail="Model not found")
     # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+    model = pickle.loads(model_bytes)
     predictions = model.predict(test_X)
     matrix = pa.getConfusionMatrix(predictions, test_y)
     accuracy = pa.getModelAccuracy(matrix)
@@ -143,51 +162,66 @@ def getModelAccuracy(tableName: str, modelId: int, projectId: int):
 
 
 # GET request to retrieve specificity for a specific model
-@app.get("/specificity/{tableName}/{modelId}/{projectId}")
-def getSpecificity(tableName: str, modelId: int, projectId: int):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
+@app.get("/specificity/{tableName}/{modelId}/{secondId}")
+def getSpecificity(tableName: str, modelId: int, secondId: int):
     # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
+    # Select the model bytes from the database
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query,(modelId, secondId,))
     model_bytes = cur.fetchone()[0]
     if not model_bytes:
         raise HTTPException(status_code=404, detail="Model not found")
     # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+    model = pickle.loads(model_bytes)
     prediction = model.predict(test_X)
     matrix = pa.getConfusionMatrix(prediction, test_y)
     specificity = pa.getSpecificity(matrix)
     return json.dumps({str(k): v for k, v in specificity.items()})
 
 # GET request to retrieve f1-score for a specific model
-@app.get("/f1-score/{tableName}/{modelId}/{projectId}")
-def getf1Score(tableName: str, modelId: int, projectId: int):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
+@app.get("/f1-score/{tableName}/{modelId}/{secondId}")
+def getf1Score(tableName: str, modelId: int, secondId: int):
     # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
+    # Select the model bytes from the database
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query,(modelId, secondId,))
     model_bytes = cur.fetchone()[0]
     if not model_bytes:
         raise HTTPException(status_code=404, detail="Model not found")
     # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+    model = pickle.loads(model_bytes)
     prediction = model.predict(test_X)
     matrix = pa.getConfusionMatrix(prediction, test_y)
     f1_score = pa.getF1Score(matrix)
     return json.dumps({str(k): v for k, v in f1_score.items()})
 
 # GET request to retrieve recall for a specific model
-@app.get("/recall/{tableName}/{modelId}/{projectId}")
-def getRecall(tableName: str, modelId: int, projectId: int):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
+@app.get("/recall/{tableName}/{modelId}/{secondId}")
+def getRecall(tableName: str, modelId: int, secondId: int):
     # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
+    # Select the model bytes from the database
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query,(modelId, secondId,))
     model_bytes = cur.fetchone()[0]
     if not model_bytes:
         raise HTTPException(status_code=404, detail="Model not found")
     # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+    model = pickle.loads(model_bytes)
     prediction = model.predict(test_X)
     matrix = pa.getConfusionMatrix(prediction, test_y)
     recall = pa.getRecall(matrix)
@@ -195,51 +229,66 @@ def getRecall(tableName: str, modelId: int, projectId: int):
 
 
 # GET request to retrieve precision for a specific model
-@app.get("/precision/{tableName}/{modelId}/{projectId}")
-def getPrecision(tableName: str, modelId: int, projectId: int):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
+@app.get("/precision/{tableName}/{modelId}/{secondId}")
+def getPrecision(tableName: str, modelId: int, secondId: int):
     # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
+    # Select the model bytes from the database
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query, (modelId, secondId,))
     model_bytes = cur.fetchone()[0]
     if not model_bytes:
         raise HTTPException(status_code=404, detail="Model not found")
     # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+    model = pickle.loads(model_bytes)
     prediction = model.predict(test_X)
     matrix = pa.getConfusionMatrix(prediction, test_y)
     precision = pa.getPrecision(matrix)
     return json.dumps({str(k): v for k, v in precision.items()})
 
 # GET request to retrieve sensitivity for a specific model
-@app.get("/sensitivity/{tableName}/{modelId}/{projectId}")
-def get_sensitivity(tableName: str, modelId: int, projectId: int):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
+@app.get("/sensitivity/{tableName}/{modelId}/{secondId}")
+def get_sensitivity(tableName: str, modelId: int, secondId: int):
     # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
+    # Select the model bytes from the database
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query, (modelId, secondId,))
     model_bytes = cur.fetchone()[0]
     if not model_bytes:
         raise HTTPException(status_code=404, detail="Model not found")
     # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+    model = pickle.loads(model_bytes)
     predictions = model.predict(test_X)
     matrix = pa.getConfusionMatrix(predictions, test_y)
     sensitivity = pa.getSensitivity(matrix)
     return json.dumps({str(k): v for k, v in sensitivity.items()})
 
 # GET request to retrieve complete report of a specific model with respect to all classes
-@app.get("/report/{tableName}/{modelId}/{projectId}/{beta}")
-def getReport(tableName: str, modelId: int, projectId: int, beta: float = 1):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
+@app.get("/report/{tableName}/{modelId}/{secondId}/{beta}")
+def getReport(tableName: str, modelId: int, secondId: int, beta: float = 1):
     # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
+    # Select the model bytes from the database
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query, (modelId, secondId,))
     model_bytes = cur.fetchone()[0]
     if not model_bytes:
         raise HTTPException(status_code=404, detail="Model not found")
     # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+    model = pickle.loads(model_bytes)
 
     # Generate predictions and labels for the model
     predictions = model.predict(test_X)
@@ -248,33 +297,42 @@ def getReport(tableName: str, modelId: int, projectId: int, beta: float = 1):
     return json.dumps([{str(k): {str(inner_k): inner_v for inner_k, inner_v in v.items()}} for k, v in class_metrics.items()])
 
 # GET request to retrieve accuracy of a specific model
-@app.get("/auc/{tableName}/{modelId}/{projectId}")
-def getAuc(tableName: str, modelId: int, projectId: int):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
+@app.get("/auc/{tableName}/{modelId}/{secondId}")
+def getAuc(tableName: str, modelId: int, secondId: int):
     # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
+    # Select the model bytes from the database
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query,(modelId, secondId,))
     model_bytes = cur.fetchone()[0]
     if not model_bytes:
         raise HTTPException(status_code=404, detail="Model not found")
     # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+    model = pickle.loads(model_bytes)
     predictions = model.predict(test_X)
     matrix = pa.getConfusionMatrix(predictions, test_y)
     auc = pa.getAuc(matrix)
     return json.dumps({str(k): v for k, v in auc.items()})
 
-@app.get("/f-beta-score/{tableName}/{modelId}/{projectId}/{beta}")
-def getFBetaScore(tableName: str, modelId: int, projectId: int, beta: float = 1.0):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
+@app.get("/f-beta-score/{tableName}/{modelId}/{secondId}/{beta}")
+def getFBetaScore(tableName: str, modelId: int, secondId: int, beta: float = 1.0):
     # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query,(modelId, secondId,))
     model_bytes = cur.fetchone()[0]
     if not model_bytes:
         raise HTTPException(status_code=404, detail="Model not found")
     # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+    model = pickle.loads(model_bytes)
     predictions = model.predict(test_X)
     matrix = pa.getConfusionMatrix(predictions, test_y)
     f_beta_score = pa.getFBetaScore(matrix, beta)
@@ -370,35 +428,45 @@ def getAllKernelWeights_temp(modelId: str, layerName: str):
 # Todo: >>>>>>>>>>>>>>>>>>>     END     >>>>>>>>>>>>>>>>>>>>>>>>>.
 
 # GET request to retrieve all the trainable weights of a layers in a specific model
-@app.get("/all-weights/{tableName}/{modelId}/{projectId}/{layerName}")
-def get_weights(tableName: str, modelId: int, projectId: int, layerName: str):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
+@app.get("/all-weights/{tableName}/{modelId}/{secondId}/{layerName}")
+def get_weights(tableName: str, modelId: int, secondId: int, layerName: str):
     # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
+    # Select the model bytes from the database
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query,(modelId, secondId,))
     model_bytes = cur.fetchone()[0]
     if not model_bytes:
         raise HTTPException(status_code=404, detail="Model not found")
     # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+    model = pickle.loads(model_bytes)
     trainable_weights = weights.GetWeights(model, layerName)
     result = trainable_weights.tolist()
     return jt.dumps(result)
 
 
 # GET request to retrieve all the weights of a specific kernel in a specific layer of a specific model
-@app.get("/kernel-weights/{tableName}/{modelId}/{projectId}/{layerName}/{kernel}")
-def getKernelWeights(tableName: str, modelId: int, projectId: int, layerName: str, kernel: int):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
+@app.get("/kernel-weights/{tableName}/{modelId}/{secondId}/{layerName}/{kernel}")
+def getKernelWeights(tableName: str, modelId: int, secondId: int, layerName: str, kernel: int):
 
     # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
+    # Select the model bytes from the database
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query,(modelId, secondId,))
     model_bytes = cur.fetchone()[0]
     if not model_bytes:
         raise HTTPException(status_code=404, detail="Model not found")
     # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+    model = pickle.loads(model_bytes)
 
     # Get the names of the layers on which neuron level operators are applicable
     neuron_layers = layers.getNeuronLayers(model)
@@ -415,17 +483,22 @@ def getKernelWeights(tableName: str, modelId: int, projectId: int, layerName: st
 
 
 # GET request to retrieve all the weights of a All kernel in a specific layer of a specific model
-@app.get("/all-kernel-weights/{tableName}/{modelId}/{projectId}/{layerName}")
-def getAllKernelWeights(tableName: str, modelId: int, projectId: int, layerName: str):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
+@app.get("/all-kernel-weights/{tableName}/{modelId}/{secondId}/{layerName}")
+def getAllKernelWeights(tableName: str, modelId: int, secondId: int, layerName: str):
     # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
+    # Select the model bytes from the database
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query,(modelId, secondId,))
     model_bytes = cur.fetchone()[0]
     if not model_bytes:
         raise HTTPException(status_code=404, detail="Model not found")
     # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+    model = pickle.loads(model_bytes)
 
     # Get the names of the layers on which neuron level operators are applicable
     neuron_layers = layers.getNeuronLayers(model)
@@ -492,30 +565,36 @@ def get_model_image(modelId: str):
 
 
 # PUT request to change neuron value using Change Neuron Mutation Operator
-@app.put("/change-neuron/{tableName}/{modelId}/{projectId}/{layerName}/{row}/{column}/{kernel}/{value}")
-def change_neuron(tableName: str, modelId: int, projectId: int, layerName: str, row: int, column: int, kernel: int, value: Union[float,None],
+@app.put("/change-neuron/{tableName}/{modelId}/{secondId}/{layerName}/{row}/{column}/{kernel}/{value}")
+def change_neuron(tableName: str, modelId: int, secondId: int, layerName: str, row: int, column: int, kernel: int, value: Union[float,None],
                   response: Response):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
     # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
+    # Select the model bytes from the database
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query,(modelId, secondId,))
     model_bytes = cur.fetchone()[0]
     if not model_bytes:
         raise HTTPException(status_code=404, detail="Model not found")
     # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+    model = pickle.loads(model_bytes)
 
     # Create a deep copy of the model
-    model_obj = models.clone_model(model)
-    model_obj.set_weights(model.get_weights())
+    mutant = models.clone_model(model)
+    mutant.set_weights(model.get_weights())
     # Get the names of the layers on which neuron level operators are applicable
     neuron_layers = layers.getNeuronLayers(model)
 
     if layerName not in neuron_layers:
         raise HTTPException(status_code=500, detail=("Invalid layer"))
     try:
-        NeuronOperator.changeNeuron(model_obj, layerName, row, column, kernel, value)
-        response.status_code = 200
+        NeuronOperator.changeNeuron(mutant, layerName, row, column, kernel, value)
+        model_bytes = pickle.dumps(mutant)
+
         # Insert the new model into the database
         cur.execute("""
                     INSERT INTO mutated_models (original_model_id, name, description, file, created_at, updated_at)
@@ -524,7 +603,7 @@ def change_neuron(tableName: str, modelId: int, projectId: int, layerName: str, 
                     (modelId, f"mutant-{modelId}",
                     f"Mutated Model with the effect of Change Neuron at"
                     f" Layer: {layerName} and [{row}][{column}] of kernel {kernel}",
-                    model_obj.to_bytes(), datetime.utcnow(), datetime.utcnow())
+                    model_bytes, datetime.utcnow(), datetime.utcnow())
                     )
         new_model_id = cur.fetchone()[0]
 
@@ -533,28 +612,33 @@ def change_neuron(tableName: str, modelId: int, projectId: int, layerName: str, 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.put("/change-edge/{tableName}/{modelId}/{projectId}/{layerName}/{prevNeuron}/{currNeuron}/{value}")
-def change_edge(tableName: str, modelId: int, projectId: int, layerName: str, prevNeuron: int, currNeuron: int, value: Union[float,None],
+@app.put("/change-edge/{tableName}/{modelId}/{secondId}/{layerName}/{prevNeuron}/{currNeuron}/{value}")
+def change_edge(tableName: str, modelId: int, secondId: int, layerName: str, prevNeuron: int, currNeuron: int, value: Union[float,None],
                   response: Response):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
     # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query,(modelId, secondId,))
     model_bytes = cur.fetchone()[0]
     if not model_bytes:
         raise HTTPException(status_code=404, detail="Model not found")
     # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+    model = pickle.loads(model_bytes)
     # Create a deep copy of the model
-    model_obj = models.clone_model(model)
-    model_obj.set_weights(model.get_weights())
+    mutant = models.clone_model(model)
+    mutant.set_weights(model.get_weights())
     # Get the names of the layers on which neuron level operators are applicable
     edge_layers = layers.getEdgeLayers(model)
     if layerName not in edge_layers:
         raise HTTPException(status_code=500, detail=("Invalid layer"))
 
     try:
-        EdgeOperator.changeEdge(model_obj, layerName, prevNeuron, currNeuron, value)
+        EdgeOperator.changeEdge(mutant, layerName, prevNeuron, currNeuron, value)
+        model_bytes = pickle.dumps(mutant)
         response.status_code = 200
         # Insert the new model into the database
         cur.execute("""
@@ -564,7 +648,7 @@ def change_edge(tableName: str, modelId: int, projectId: int, layerName: str, pr
                     (modelId, f"mutant-{modelId}",
                      f"Mutated Model with the effect of Change Edge at"
                      f" Layer: {layerName} at {prevNeuron} -> {currNeuron} connection",
-                     model_obj.to_bytes(), datetime.utcnow(), datetime.utcnow())
+                     model_bytes, datetime.utcnow(), datetime.utcnow())
                     )
         new_model_id = cur.fetchone()[0]
 
@@ -575,29 +659,34 @@ def change_edge(tableName: str, modelId: int, projectId: int, layerName: str, pr
 
 
 # PUT request to block neuron value using Block Neuron Mutation Operator
-@app.put("/block-neuron/{tableName}/{modelId}/{projectId}/{layerName}/{row}/{column}/{kernel}")
-def block_neuron(tableName: str, modelId: int, projectId: int, layerName: str, row: int, column: int, kernel: int, response: Response):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
+@app.put("/block-neuron/{tableName}/{modelId}/{secondId}/{layerName}/{row}/{column}/{kernel}")
+def block_neuron(tableName: str, modelId: int, secondId: int, layerName: str, row: int, column: int, kernel: int, response: Response):
     # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query,(modelId, secondId,))
     model_bytes = cur.fetchone()[0]
     if not model_bytes:
         raise HTTPException(status_code=404, detail="Model not found")
     # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+    model = pickle.loads(model_bytes)
 
     # Create a deep copy of the model
-    model_obj = models.clone_model(model)
-    model_obj.set_weights(model.get_weights())
+    mutant = models.clone_model(model)
+    mutant.set_weights(model.get_weights())
     # Get the names of the layers on which neuron level operators are applicable
     neuron_layers = layers.getNeuronLayers(model)
 
     if layerName not in neuron_layers:
         raise HTTPException(status_code=500, detail=("Invalid layer"))
     try:
-        NeuronOperator.blockNeuron(model_obj, layerName, row, column, kernel)
-        response.status_code = 200
+        NeuronOperator.blockNeuron(mutant, layerName, row, column, kernel)
+        model_bytes = pickle.dumps(mutant)
+
         # Insert the new model into the database
         cur.execute("""
                             INSERT INTO mutated_models (original_model_id, name, description, file, created_at, updated_at)
@@ -606,7 +695,7 @@ def block_neuron(tableName: str, modelId: int, projectId: int, layerName: str, r
                     (modelId, f"mutant-{modelId}",
                      f"Mutated Model with the effect of Block Neuron at"
                      f" Layer: {layerName} and [{row}][{column}] of kernel {kernel}",
-                     model_obj.to_bytes(), datetime.utcnow(), datetime.utcnow())
+                     model_bytes, datetime.utcnow(), datetime.utcnow())
                     )
         new_model_id = cur.fetchone()[0]
 
@@ -616,28 +705,32 @@ def block_neuron(tableName: str, modelId: int, projectId: int, layerName: str, r
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.put("/block-edge/{tableName}/{modelId}/{projectId}/{layerName}/{prevNeuron}/{currNeuron}")
-def block_edge(tableName: str, modelId: int, projectId: int, layerName: str, prevNeuron: int, currNeuron: int, response: Response):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
+@app.put("/block-edge/{tableName}/{modelId}/{secondId}/{layerName}/{prevNeuron}/{currNeuron}")
+def block_edge(tableName: str, modelId: int, secondId: int, layerName: str, prevNeuron: int, currNeuron: int, response: Response):
     # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query,(modelId, secondId,))
     model_bytes = cur.fetchone()[0]
     if not model_bytes:
         raise HTTPException(status_code=404, detail="Model not found")
     # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+    model = pickle.loads(model_bytes)
     # Create a deep copy of the model
-    model_obj = models.clone_model(model)
-    model_obj.set_weights(model.get_weights())
+    mutant = models.clone_model(model)
+    mutant.set_weights(model.get_weights())
     # Get the names of the layers on which neuron level operators are applicable
     edge_layers = layers.getEdgeLayers(model)
     if layerName not in edge_layers:
         raise HTTPException(status_code=500, detail=("Invalid layer"))
 
     try:
-        EdgeOperator.blockEdge(model_obj, layerName, prevNeuron, currNeuron)
-        response.status_code = 200
+        EdgeOperator.blockEdge(mutant, layerName, prevNeuron, currNeuron)
+        model_bytes = pickle.dumps(mutant)
         # Insert the new model into the database
         cur.execute("""
                             INSERT INTO mutated_models (original_model_id, name, description, file, created_at, updated_at)
@@ -646,38 +739,44 @@ def block_edge(tableName: str, modelId: int, projectId: int, layerName: str, pre
                     (modelId, f"mutant-{modelId}",
                      f"Mutated Model with the effect of Block Weight at"
                      f" Layer: {layerName} at {prevNeuron} -> {currNeuron} connection",
-                     model_obj.to_bytes(), datetime.utcnow(), datetime.utcnow())
+                     model_bytes, datetime.utcnow(), datetime.utcnow())
                     )
         new_model_id = cur.fetchone()[0]
 
         response.status_code = 200
-        return {"message": "Neuron value successfully changed", "mutated_model_id": new_model_id}
+        return {"message": "edge value successfully blocked", "mutated_model_id": new_model_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 # PUT request to change neuron value with its multiplicative inverse
-@app.put("/mul-inverse-neuron/{tableName}/{modelId}/{projectId}/{layerName}/{row}/{column}/{kernel}")
-def mul_inverse_neuron(tableName: str, modelId: int, projectId: int, layerName: str, row: int, column: int, kernel: int, response: Response):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
+@app.put("/mul-inverse-neuron/{tableName}/{modelId}/{secondId}/{layerName}/{row}/{column}/{kernel}")
+def mul_inverse_neuron(tableName: str, modelId: int, secondId: int, layerName: str, row: int, column: int, kernel: int, response: Response):
     # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query,(modelId, secondId,))
     model_bytes = cur.fetchone()[0]
     if not model_bytes:
         raise HTTPException(status_code=404, detail="Model not found")
     # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+    model = pickle.loads(model_bytes)
     # Get the names of the layers on which neuron level operators are applicable
     neuron_layers = layers.getNeuronLayers(model)
 
     if layerName not in neuron_layers:
         raise HTTPException(status_code=500, detail=("Invalid layer"))
     # Create a deep copy of the model
-    model_obj = models.clone_model(model)
-    model_obj.set_weights(model.get_weights())
+    mutant = models.clone_model(model)
+    mutant.set_weights(model.get_weights())
     try:
-        NeuronOperator.mul_inverse(model_obj, layerName, row, column, kernel)
+        NeuronOperator.mul_inverse(mutant, layerName, row, column, kernel)
+        model_bytes = pickle.dumps(mutant)
+
         # Insert the new model into the database
         cur.execute("""
                                     INSERT INTO mutated_models (original_model_id, name, description, file, created_at, updated_at)
@@ -686,37 +785,41 @@ def mul_inverse_neuron(tableName: str, modelId: int, projectId: int, layerName: 
                     (modelId, f"mutant-{modelId}",
                      f"Mutated Model with the effect of Multiplicative Inverse at"
                      f" Layer: {layerName} and [{row}][{column}] of kernel {kernel}",
-                     model_obj.to_bytes(), datetime.utcnow(), datetime.utcnow())
+                     model_bytes, datetime.utcnow(), datetime.utcnow())
                     )
         new_model_id = cur.fetchone()[0]
         response.status_code = 200
-        return {"message": "Neuron value successfully blocked", "mutated_model_id": new_model_id}
+        return {"message": "Neuron value successfully inverted", "mutated_model_id": new_model_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.put("/mul-inverse-edge/{tableName}/{modelId}/{projectId}/{layerName}/{prevNeuron}/{currNeuron}")
-def mul_inverse_edge(tableName: str, modelId: int, projectId: int, layerName: str, prevNeuron: int, currNeuron: int, response: Response):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
+@app.put("/mul-inverse-edge/{tableName}/{modelId}/{secondId}/{layerName}/{prevNeuron}/{currNeuron}")
+def mul_inverse_edge(tableName: str, modelId: int, secondId: int, layerName: str, prevNeuron: int, currNeuron: int, response: Response):
     # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query,(modelId, secondId,))
     model_bytes = cur.fetchone()[0]
     if not model_bytes:
         raise HTTPException(status_code=404, detail="Model not found")
     # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+    model = pickle.loads(model_bytes)
     # Create a deep copy of the model
-    model_obj = models.clone_model(model)
-    model_obj.set_weights(model.get_weights())
+    mutant = models.clone_model(model)
+    mutant.set_weights(model.get_weights())
     # Get the names of the layers on which neuron level operators are applicable
     edge_layers = layers.getEdgeLayers(model)
     if layerName not in edge_layers:
         raise HTTPException(status_code=500, detail=("Invalid layer"))
 
     try:
-        EdgeOperator.mul_inverse(model_obj, layerName, prevNeuron, currNeuron)
-        response.status_code = 200
+        EdgeOperator.mul_inverse(mutant, layerName, prevNeuron, currNeuron)
+        model_bytes = pickle.dumps(mutant)
         # Insert the new model into the database
         cur.execute("""
                                     INSERT INTO mutated_models (original_model_id, name, description, file, created_at, updated_at)
@@ -725,39 +828,44 @@ def mul_inverse_edge(tableName: str, modelId: int, projectId: int, layerName: st
                     (modelId, f"mutant-{modelId}",
                      f"Mutated Model with the effect of Multiplicative Inverse at"
                      f" Layer: {layerName} at {prevNeuron} -> {currNeuron} connection",
-                     model_obj.to_bytes(), datetime.utcnow(), datetime.utcnow())
+                     model_bytes, datetime.utcnow(), datetime.utcnow())
                     )
         new_model_id = cur.fetchone()[0]
 
         response.status_code = 200
-        return {"message": "Neuron value successfully changed", "mutated_model_id": new_model_id}
+        return {"message": "edge value successfully inverted", "mutated_model_id": new_model_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 # PUT request to replace neuron with its Additive Inverse
-@app.put("/additive-inverse-neuron/{tableName}/{modelId}/{projectId}/{layerName}/{row}/{column}/{kernel}")
-def additive_inverse_neuron(tableName: str, modelId: int, projectId: int, layerName: str, row: int, column: int, kernel: int, response: Response):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
+@app.put("/additive-inverse-neuron/{tableName}/{modelId}/{secondId}/{layerName}/{row}/{column}/{kernel}")
+def additive_inverse_neuron(tableName: str, modelId: int, secondId: int, layerName: str, row: int, column: int, kernel: int, response: Response):
     # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query,(modelId, secondId,))
     model_bytes = cur.fetchone()[0]
     if not model_bytes:
         raise HTTPException(status_code=404, detail="Model not found")
     # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+    model = pickle.loads(model_bytes)
+
     # Get the names of the layers on which neuron level operators are applicable
     neuron_layers = layers.getNeuronLayers(model)
 
     if layerName not in neuron_layers:
         raise HTTPException(status_code=500, detail=("Invalid layer"))
     # Create a deep copy of the model
-    model_obj = models.clone_model(model)
-    model_obj.set_weights(model.get_weights())
+    mutant = models.clone_model(model)
+    mutant.set_weights(model.get_weights())
     try:
-        NeuronOperator.additive_inverse(model_obj, layerName, row, column, kernel)
-        response.status_code = 200
+        NeuronOperator.additive_inverse(mutant, layerName, row, column, kernel)
+        model_bytes = pickle.dumps(mutant)
         # Insert the new model into the database
         cur.execute("""
                                            INSERT INTO mutated_models (original_model_id, name, description, file, created_at, updated_at)
@@ -766,36 +874,42 @@ def additive_inverse_neuron(tableName: str, modelId: int, projectId: int, layerN
                     (modelId, f"mutant-{modelId}",
                      f"Mutated Model with the effect of Additive Inverse at"
                      f" Layer: {layerName} and [{row}][{column}] of kernel {kernel}",
-                     model_obj.to_bytes(), datetime.utcnow(), datetime.utcnow())
+                     model_bytes, datetime.utcnow(), datetime.utcnow())
                     )
         new_model_id = cur.fetchone()[0]
         response.status_code = 200
-        return {"message": "Neuron value successfully blocked", "mutated_model_id": new_model_id}
+        return {"message": "Neuron value successfully inverted", "mutated_model_id": new_model_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.put("/additive-inverse-edge/{tableName}/{modelId}/{projectId}/{layerName}/{prevNeuron}/{currNeuron}")
-def additive_inverse_edge(tableName: str, modelId: int, projectId: int, layerName: str, prevNeuron: int, currNeuron: int, response: Response):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
+@app.put("/additive-inverse-edge/{tableName}/{modelId}/{secondId}/{layerName}/{prevNeuron}/{currNeuron}")
+def additive_inverse_edge(tableName: str, modelId: int, secondId: int, layerName: str, prevNeuron: int, currNeuron: int, response: Response):
     # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query,(modelId, secondId,))
     model_bytes = cur.fetchone()[0]
     if not model_bytes:
         raise HTTPException(status_code=404, detail="Model not found")
     # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+    model = pickle.loads(model_bytes)
+
     # Create a deep copy of the model
-    model_obj = models.clone_model(model)
-    model_obj.set_weights(model.get_weights())
+    mutant = models.clone_model(model)
+    mutant.set_weights(model.get_weights())
     # Get the names of the layers on which neuron level operators are applicable
     edge_layers = layers.getEdgeLayers(model)
     if layerName not in edge_layers:
         raise HTTPException(status_code=500, detail=("Invalid layer"))
 
     try:
-        EdgeOperator.additive_inverse(model_obj, layerName, prevNeuron, currNeuron)
-        response.status_code = 200
+        EdgeOperator.additive_inverse(mutant, layerName, prevNeuron, currNeuron)
+        model_bytes = pickle.dumps(mutant)
+
         # Insert the new model into the database
         cur.execute("""
                                     INSERT INTO mutated_models (original_model_id, name, description, file, created_at, updated_at)
@@ -804,39 +918,44 @@ def additive_inverse_edge(tableName: str, modelId: int, projectId: int, layerNam
                     (modelId, f"mutant-{modelId}",
                      f"Mutated Model with the effect of Additive Inverse at"
                      f" Layer: {layerName} at {prevNeuron} -> {currNeuron} connection",
-                     model_obj.to_bytes(), datetime.utcnow(), datetime.utcnow())
+                     model_bytes, datetime.utcnow(), datetime.utcnow())
                     )
         new_model_id = cur.fetchone()[0]
 
         response.status_code = 200
-        return {"message": "Neuron value successfully changed", "mutated_model_id": new_model_id}
+        return {"message": "edge value successfully inverted", "mutated_model_id": new_model_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 # PUT request to invert the value of neuron using Invert Neuron Mutation Operator
-@app.put("/invert-neuron/{tableName}/{modelId}/{projectId}/{layerName}/{row}/{column}/{kernel}")
-def invert_neuron(tableName: str, modelId: int, projectId: int, layerName: str, row: int, column: int, kernel: int, response: Response):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
+@app.put("/invert-neuron/{tableName}/{modelId}/{secondId}/{layerName}/{row}/{column}/{kernel}")
+def invert_neuron(tableName: str, modelId: int, secondId: int, layerName: str, row: int, column: int, kernel: int, response: Response):
     # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query,(modelId, secondId,))
     model_bytes = cur.fetchone()[0]
     if not model_bytes:
         raise HTTPException(status_code=404, detail="Model not found")
     # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+    model = pickle.loads(model_bytes)
+
     # Get the names of the layers on which neuron level operators are applicable
     neuron_layers = layers.getNeuronLayers(model)
 
     if layerName not in neuron_layers:
         raise HTTPException(status_code=500, detail=("Invalid layer"))
     # Create a deep copy of the model
-    model_obj = models.clone_model(model)
-    model_obj.set_weights(model.get_weights())
+    mutant = models.clone_model(model)
+    mutant.set_weights(model.get_weights())
     try:
-        NeuronOperator.invertNeuron(model_obj, layerName, row, column, kernel)
-        response.status_code = 200
+        NeuronOperator.invertNeuron(mutant, layerName, row, column, kernel)
+        model_bytes = pickle.dumps(mutant)
         # Insert the new model into the database
         cur.execute("""
                                            INSERT INTO mutated_models (original_model_id, name, description, file, created_at, updated_at)
@@ -845,36 +964,41 @@ def invert_neuron(tableName: str, modelId: int, projectId: int, layerName: str, 
                     (modelId, f"mutant-{modelId}",
                      f"Mutated Model with the effect of Invert at"
                      f" Layer: {layerName} and [{row}][{column}] of kernel {kernel}",
-                     model_obj.to_bytes(), datetime.utcnow(), datetime.utcnow())
+                     model_bytes, datetime.utcnow(), datetime.utcnow())
                     )
         new_model_id = cur.fetchone()[0]
         response.status_code = 200
-        return {"message": "Neuron value successfully blocked", "mutated_model_id": new_model_id}
+        return {"message": "Neuron value successfully inverted", "mutated_model_id": new_model_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.put("/invert-edge/{tableName}/{modelId}/{projectId}/{layerName}/{prevNeuron}/{currNeuron}")
-def invert_edge(tableName: str, modelId: int, projectId: int, layerName: str, prevNeuron: int, currNeuron: int, response: Response):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
+@app.put("/invert-edge/{tableName}/{modelId}/{secondId}/{layerName}/{prevNeuron}/{currNeuron}")
+def invert_edge(tableName: str, modelId: int, secondId: int, layerName: str, prevNeuron: int, currNeuron: int, response: Response):
     # Select the model bytes from the database
-    cur.execute("SELECT model_bytes FROM %s WHERE id = %d and project_id = %d", (tableName, modelId, projectId))
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query,(modelId, secondId,))
     model_bytes = cur.fetchone()[0]
     if not model_bytes:
         raise HTTPException(status_code=404, detail="Model not found")
     # Load the model from the bytes
-    model = keras.models.model_from_bytes(model_bytes)
+    model = pickle.loads(model_bytes)
+
     # Create a deep copy of the model
-    model_obj = models.clone_model(model)
-    model_obj.set_weights(model.get_weights())
+    mutant = models.clone_model(model)
+    mutant.set_weights(model.get_weights())
     # Get the names of the layers on which neuron level operators are applicable
     edge_layers = layers.getEdgeLayers(model)
     if layerName not in edge_layers:
         raise HTTPException(status_code=500, detail=("Invalid layer"))
 
     try:
-        EdgeOperator.invertEdge(model_obj, layerName, prevNeuron, currNeuron)
-        response.status_code = 200
+        EdgeOperator.invertEdge(mutant, layerName, prevNeuron, currNeuron)
+        model_bytes = pickle.dumps(mutant)
         # Insert the new model into the database
         cur.execute("""
                                     INSERT INTO mutated_models (original_model_id, name, description, file, created_at, updated_at)
@@ -883,31 +1007,29 @@ def invert_edge(tableName: str, modelId: int, projectId: int, layerName: str, pr
                     (modelId, f"mutant-{modelId}",
                      f"Mutated Model with the effect of Invert Edge Weight at"
                      f" Layer: {layerName} at {prevNeuron} -> {currNeuron} connection",
-                     model_obj.to_bytes(), datetime.utcnow(), datetime.utcnow())
+                     model_bytes, datetime.utcnow(), datetime.utcnow())
                     )
         new_model_id = cur.fetchone()[0]
 
         response.status_code = 200
-        return {"message": "Neuron value successfully changed", "mutated_model_id": new_model_id}
+        return {"message": "Edge value successfully inverted", "mutated_model_id": new_model_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 # Index based PUT request for Mutation Operators
-@app.put("/mutation-operator/{index}/{tableName}/{modelId}/{projectId}/{layerName}/{row}/{column}/{kernel}/{value}")
-def mutation_operator(index: int, tableName: str, modelId: int, projectId: int, layerName: str, row: int, column: int, kernel: int, response: Response,
+@app.put("/mutation-operator/{index}/{tableName}/{modelId}/{secondId}/{layerName}/{row}/{column}/{kernel}/{value}")
+def mutation_operator(index: int, tableName: str, modelId: int, secondId: int, layerName: str, row: int, column: int, kernel: int, response: Response,
                       value: Union[float, None] = None):
-    if not tableName.isalnum():
-        raise HTTPException(status_code=400, detail="Invalid table name parameter")
     if index == 1:
-        result = change_neuron(tableName, modelId, projectId, layerName, row, column, kernel, value, response)
+        result = change_neuron(tableName, modelId, secondId, layerName, row, column, kernel, value, response)
     elif index == 2:
-        result = block_neuron(tableName, modelId,projectId, layerName, row, column, kernel, response)
+        result = block_neuron(tableName, modelId,secondId, layerName, row, column, kernel, response)
     elif index == 3:
-        result = mul_inverse_neuron(tableName, modelId,projectId, layerName, row, column, kernel, response)
+        result = mul_inverse_neuron(tableName, modelId,secondId, layerName, row, column, kernel, response)
     elif index == 4:
-        result = additive_inverse_neuron(tableName, modelId, projectId, layerName, row, column, kernel, response)
+        result = additive_inverse_neuron(tableName, modelId, secondId, layerName, row, column, kernel, response)
     elif index == 5:
-        result = invert_neuron(tableName, modelId,projectId, layerName, row, column, kernel, response)
+        result = invert_neuron(tableName, modelId,secondId, layerName, row, column, kernel, response)
     else:
         # If the index is not recognized, return an error message
         raise HTTPException(status_code=400, detail="Invalid Mutation Operator index")
