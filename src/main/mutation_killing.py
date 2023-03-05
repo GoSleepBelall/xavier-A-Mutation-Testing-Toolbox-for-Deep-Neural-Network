@@ -294,7 +294,7 @@ hyper_params = {
     "op_value": ""
     }
 }
-mutation_killing(1, hyper_params )
+# mutation_killing(1, hyper_params )
 
 
 

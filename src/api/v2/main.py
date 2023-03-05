@@ -12,10 +12,11 @@ from datetime import datetime
 import numpy as np
 import yaml
 import visualkeras as vk
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "main")))
 
 from mutation_operators import NeuronLevel
-from mutation_operators import EdgeLevel
+from mutation_operators import WeightLevel
 from operator_utils import WeightUtils
 from operator_utils import Model_layers
 import predictions_analysis as pa
@@ -23,11 +24,11 @@ from pg_adapter import PgAdapter
 import mutation_killing as mk
 
 
-app = FastAPI(title="XAVIER-API", description="A Mutation Testing Toolbox.", version="1.0")
+app = FastAPI(title="XAVIER-API", description="A Mutation Testing Toolbox.", version="2.0")
 layers = Model_layers()
 weights = WeightUtils()
 NeuronOperator = NeuronLevel()
-EdgeOperator = EdgeLevel()
+EdgeOperator = WeightLevel()
 
 
 # Dataset for Lenet
@@ -44,11 +45,11 @@ def run(projectId: int):
     name = result[2]
     desc = result[3]
     hyper_params = yaml.safe_load(result[4])
-    if hyper_params['k_value'] < 5:
+    if int(hyper_params['k_value']) < 5:
         raise HTTPException(status_code=400, detail="Value of k must be greater than or equals to 5")
     try:
         # Fetching data
-        mk.mutation_killing(1, hyper_params)
+        mk.mutation_killing(projectId, hyper_params)
         return {"message": "Project Successfully Completed"}
     except Exception as e:
         results = {
