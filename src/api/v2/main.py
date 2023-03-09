@@ -79,7 +79,7 @@ def run(projectId: int):
         raise HTTPException(status_code=400, detail="Value of k must be greater than or equals to 5")
     try:
         # Fetching data
-        mk.mutation_killing(secondId, hyper_params)
+        mk.mutation_killing(projectId, hyper_params)
         return {"message": "Project Successfully Completed"}
     except Exception as e:
         results = {

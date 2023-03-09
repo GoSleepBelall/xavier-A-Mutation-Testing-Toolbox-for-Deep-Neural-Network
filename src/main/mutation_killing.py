@@ -78,9 +78,11 @@ hyper_params = {
 def train_all_models(projectId, training_data, training_data_labels, testing_data, testing_data_labels, hyper_params ):
     m_gnrtr = Lenet5Generator()
     conv_operator = NeuronLevel()
+    den_operator = WeightLevel()
     accuracy_model = []
     accuracy_mutant = []
     k_value = hyper_params['k_value']
+    print(hyper_params)
     if k_value.isdigit():
         loop = int(k_value)
     else:
@@ -137,6 +139,33 @@ def train_all_models(projectId, training_data, training_data_labels, testing_dat
                                           int(hyper_params['operator_params']['modal_col']),
                                           int(hyper_params['operator_params']['modal_kernel']))
 
+        elif hyper_params['operator_type'] == 'weight_level':
+            if hyper_params['operator_params']['operator'] == "change-edge":
+                den_operator.changeEdge(mutant,hyper_params['layer'],
+                                    int(hyper_params['operator_params']['modal_prev']),
+                                    int(hyper_params['operator_params']['modal_curr']),
+                                    int(hyper_params['operator_params']['value']))
+
+            elif hyper_params['operator_params']['operator'] == "block-edge":
+                den_operator.blockEdge(mutant,hyper_params['layer'],
+                                        int(hyper_params['operator_params']['modal_prev']),
+                                        int(hyper_params['operator_params']['modal_curr']))
+
+            elif hyper_params['operator_params']['operator'] == "mul-inverse-edge":
+                den_operator.mul_inverse(mutant,hyper_params['layer'],
+                                        int(hyper_params['operator_params']['modal_prev']),
+                                        int(hyper_params['operator_params']['modal_curr']))
+
+            elif hyper_params['operator_params']['operator'] == "additive-inverse-edge":
+                den_operator.additive_inverse(mutant,hyper_params['layer'],
+                                        int(hyper_params['operator_params']['modal_prev']),
+                                        int(hyper_params['operator_params']['modal_curr']))
+
+            elif hyper_params['operator_params']['operator'] == "invert-edge":
+                den_operator.invertEdge(mutant,hyper_params['layer'],
+                                        int(hyper_params['operator_params']['modal_prev']),
+                                        int(hyper_params['operator_params']['modal_curr']))
+
         # Get Accuracies of Model
         prediction = model.predict(testing_data[i])
         counters = pa.getConfusionMatrix(prediction, testing_data_labels[i])
@@ -183,62 +212,9 @@ def train_all_models(projectId, training_data, training_data_labels, testing_dat
         conn.commit()
         del(model)
         del(mutant)
-        """
-        elif hyper_params[0] == 'weight_level':
-            if hyper_params['operator_params']['operator'] == "Change Edge":
-                denseOperator.changeEdge(model, layer_name, prevNeuron, currNeuron, value)
 
-            elif hyper_params['operator_params']['operator'] == "Block Edge":
-                denseOperator.blockEdge(model, layer_name, prevNeuron, currNeuron)
-
-            elif hyper_params['operator_params']['operator'] == "Multiplicative Inverse Edge":
-                denseOperator.mul_inverse(model, layer_name, prevNeuron, currNeuron)
-
-            elif hyper_params['operator_params']['operator'] == "Additive Inverse Edge":
-                denseOperator.additive_inverse(model, layer_name, prevNeuron, currNeuron)
-
-            elif hyper_params['operator_params']['operator'] == "Invert Edge":
-                denseOperator.invertEdge(model, layer_name, prevNeuron, currNeuron)
-        """
     return accuracy_model, accuracy_mutant
 
-def create_mutants_dense(k, mutation_operator, layer_name, prevNeuron, currNeuron, value):
-    denseOperator = WeightLevel()
-    for i in range(k):
-        filename = "../models/P_{}.h5".format(i)
-        model = tf.keras.models.load_model(filename)
-
-        if mutation_operator == "Change Edge":
-            denseOperator.changeEdge(model, layer_name, prevNeuron, currNeuron, value)
-        elif mutation_operator == "Block Edge":
-            denseOperator.blockEdge(model, layer_name, prevNeuron, currNeuron)
-        elif mutation_operator == "Multiplicative Inverse Edge":
-            denseOperator.mul_inverse(model, layer_name, prevNeuron, currNeuron)
-        elif mutation_operator == "Additive Inverse Edge":
-            denseOperator.additive_inverse(model, layer_name, prevNeuron, currNeuron)
-        elif mutation_operator == "Invert Edge":
-            denseOperator.invertEdge(model, layer_name, prevNeuron, currNeuron)
-
-        filename = "../models/M_{}.h5".format(i)
-        model.save(filename)
-
-
-def get_accuracies(k, testing_data, testing_data_labels):
-    accuracy_model = []
-    accuracy_mutant = []
-    for i in range(k):
-        filename = "../models/P_{}.h5".format(i)
-        model = tf.keras.models.load_model(filename)
-        prediction = model.predict(testing_data[i])
-        counters = pa.getConfusionMatrix(prediction, testing_data_labels[i])
-        accuracy_model.append(pa.getModelAccuracy(counters))
-    for i in range(k):
-        filename = "../models/M_{}.h5".format(i)
-        model = tf.keras.models.load_model(filename)
-        prediction = model.predict(testing_data[i])
-        counters = pa.getConfusionMatrix(prediction, testing_data_labels[i])
-        accuracy_mutant.append(pa.getModelAccuracy(counters))
-    return accuracy_model, accuracy_mutant
 
 def mutation_killing(projectId, hyper_params):
     # Firstly We Create Random Samples from union of Testing and Training Data
@@ -286,42 +262,5 @@ def mutation_killing(projectId, hyper_params):
     print(updated_id)
     conn.commit()
     return
-
-
-
-# hyper_params = {
-# "operator_type": "neuron_level",
-# "model": "lenet5",
-# "k_value": 5,
-# "layer": "conv2d",
-# "operator_params": {
-#     "modal_kernel": 0,
-#     "modal_row": 2,
-#     "modal_col": 0,
-#     "operator": "block-neuron",
-#     "op_value": ""
-#     }
-# }
-
-# Constructor for safe load of object coming from database
-def int_constructor(loader, node):
-    value = loader.construct_scalar(node)
-    if isinstance(value, str) and value.isdigit():
-        return int(value)
-    else:
-        return value
-
-#yaml.SafeLoader.add_constructor('tag:yaml.org,2002:int', int_constructor)
-
-#hp = "---\noperator_type: neuron_level\nmodel: lenet5\nk_value: '5'\nlayer: conv2d\noperator_params:\n  modal_kernel: '0'\n  modal_row: '1'\n  modal_col: '1'\n  operator: mul-inverse-neuron\n  op_value: ''\n"
-#hyper_params = yaml.safe_load(hp)
-#mutation_killing(6, hyper_params )
-modelId = 106
-projectId = 7
-tableName = "original_models"
-query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
-cur.execute(query,(modelId, projectId,))
-result = cur.fetchone()
-print(result)
 
 
