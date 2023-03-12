@@ -33,8 +33,8 @@ def create_samples(k):
     total_Y = np.concatenate((train_y, test_y))
 
     # set 80% of data for training and 20% for testing
-    train_size = int(len(total_X) * 0.8)
-    test_size = len(total_X) - train_size
+    train_size = int(len(total_X) * 0.857)
+    #test_size = len(total_X) - train_size
 
     training_data = []
     testing_data = []
@@ -167,20 +167,20 @@ def train_all_models(projectId, training_data, training_data_labels, testing_dat
                                         int(hyper_params['operator_params']['modal_curr']))
 
         # Get Accuracies of Model
-        prediction = model.predict(testing_data[i])
-        counters = pa.getConfusionMatrix(prediction, testing_data_labels[i])
-        matrices_original = pa.getAllMetrics(counters,1.5)
+        prediction1 = model.predict(testing_data[i])
+        counters1 = pa.getConfusionMatrix(prediction1, testing_data_labels[i])
+        matrices_original = pa.getAllMetrics(counters1,1.5)
 
         # Also store locally for further calculations
-        accuracy_model.append(pa.getModelAccuracy(counters))
+        accuracy_model.append(pa.getModelAccuracy(counters1))
 
         # Get Accuracies of Mutant
-        prediction = mutant.predict(testing_data[i])
-        counters = pa.getConfusionMatrix(prediction, testing_data_labels[i])
-        matrices_mutant = pa.getAllMetrics(counters,1.5)
+        prediction2 = mutant.predict(testing_data[i])
+        counters2 = pa.getConfusionMatrix(prediction2, testing_data_labels[i])
+        matrices_mutant = pa.getAllMetrics(counters2,1.5)
 
         # Also store locally for further calculations
-        accuracy_mutant.append(pa.getModelAccuracy(counters))
+        accuracy_mutant.append(pa.getModelAccuracy(counters2))
 
 
         # Insert models into database
@@ -262,5 +262,3 @@ def mutation_killing(projectId, hyper_params):
     print(updated_id)
     conn.commit()
     return
-
-
