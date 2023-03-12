@@ -144,7 +144,7 @@ def train_all_models(projectId, training_data, training_data_labels, testing_dat
                 den_operator.changeEdge(mutant,hyper_params['layer'],
                                     int(hyper_params['operator_params']['modal_prev']),
                                     int(hyper_params['operator_params']['modal_curr']),
-                                    int(hyper_params['operator_params']['value']))
+                                    int(hyper_params['operator_params']['op_value']))
 
             elif hyper_params['operator_params']['operator'] == "block-edge":
                 den_operator.blockEdge(mutant,hyper_params['layer'],
