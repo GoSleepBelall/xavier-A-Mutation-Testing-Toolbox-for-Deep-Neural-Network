@@ -175,7 +175,7 @@ def train_all_models(projectId, training_data, training_data_labels, testing_dat
         accuracy_model.append(pa.getModelAccuracy(counters))
 
         # Get Accuracies of Mutant
-        prediction = model.predict(testing_data[i])
+        prediction = mutant.predict(testing_data[i])
         counters = pa.getConfusionMatrix(prediction, testing_data_labels[i])
         matrices_mutant = pa.getAllMetrics(counters,1.5)
 
