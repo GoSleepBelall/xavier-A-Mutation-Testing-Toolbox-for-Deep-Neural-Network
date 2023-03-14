@@ -6,8 +6,11 @@ import tensorflow.keras.backend as K
 from tensorflow.keras.datasets import mnist
 import numpy as np
 from models_generator import Lenet5Generator
+
 from mutation_operators import NeuronLevel
 from mutation_operators import WeightLevel
+from mutation_operators import BiasLevel
+
 from operator_utils import Model_layers
 import predictions_analysis as pa
 from scipy.stats import ttest_ind
@@ -16,7 +19,6 @@ from pg_adapter import PgAdapter
 from keras import models
 import json
 import yaml
-
 
 conn = PgAdapter.get_instance().connection
 cur = conn.cursor()
@@ -34,7 +36,7 @@ def create_samples(k):
 
     # set 80% of data for training and 20% for testing
     train_size = int(len(total_X) * 0.857)
-    #test_size = len(total_X) - train_size
+    # test_size = len(total_X) - train_size
 
     training_data = []
     testing_data = []
@@ -75,10 +77,13 @@ hyper_params = {
     }
 }
 """
-def train_all_models(projectId, training_data, training_data_labels, testing_data, testing_data_labels, hyper_params ):
+
+
+def train_all_models(projectId, training_data, training_data_labels, testing_data, testing_data_labels, hyper_params):
     m_gnrtr = Lenet5Generator()
     conv_operator = NeuronLevel()
     den_operator = WeightLevel()
+    bias_operator = BiasLevel()
     accuracy_model = []
     accuracy_mutant = []
     k_value = hyper_params['k_value']
@@ -105,11 +110,11 @@ def train_all_models(projectId, training_data, training_data_labels, testing_dat
 
             if hyper_params['operator_params']['operator'] == "change-neuron":
                 conv_operator.changeNeuron(mutant,
-                                          hyper_params['layer'],
-                                          int(hyper_params['operator_params']['modal_row']),
-                                          int(hyper_params['operator_params']['modal_col']),
-                                          int(hyper_params['operator_params']['modal_kernel']),
-                                          int(hyper_params['operator_params']['op_value']))
+                                           hyper_params['layer'],
+                                           int(hyper_params['operator_params']['modal_row']),
+                                           int(hyper_params['operator_params']['modal_col']),
+                                           int(hyper_params['operator_params']['modal_kernel']),
+                                           int(hyper_params['operator_params']['op_value']))
 
             elif hyper_params['operator_params']['operator'] == "block-neuron":
                 conv_operator.blockNeuron(mutant,
@@ -127,49 +132,56 @@ def train_all_models(projectId, training_data, training_data_labels, testing_dat
 
             elif hyper_params['operator_params']['operator'] == "additive-inverse-neuron":
                 conv_operator.additive_inverse(mutant,
-                                          hyper_params['layer'],
-                                          int(hyper_params['operator_params']['modal_row']),
-                                          int(hyper_params['operator_params']['modal_col']),
-                                          int(hyper_params['operator_params']['modal_kernel']))
+                                               hyper_params['layer'],
+                                               int(hyper_params['operator_params']['modal_row']),
+                                               int(hyper_params['operator_params']['modal_col']),
+                                               int(hyper_params['operator_params']['modal_kernel']))
 
             elif hyper_params['operator_params']['operator'] == "invert-neuron":
                 conv_operator.invertNeuron(mutant,
-                                          hyper_params['layer'],
-                                          int(hyper_params['operator_params']['modal_row']),
-                                          int(hyper_params['operator_params']['modal_col']),
-                                          int(hyper_params['operator_params']['modal_kernel']))
+                                           hyper_params['layer'],
+                                           int(hyper_params['operator_params']['modal_row']),
+                                           int(hyper_params['operator_params']['modal_col']),
+                                           int(hyper_params['operator_params']['modal_kernel']))
 
         elif hyper_params['operator_type'] == 'weight_level':
             if hyper_params['operator_params']['operator'] == "change-edge":
-                den_operator.changeEdge(mutant,hyper_params['layer'],
-                                    int(hyper_params['operator_params']['modal_prev']),
-                                    int(hyper_params['operator_params']['modal_curr']),
-                                    int(hyper_params['operator_params']['op_value']))
+                den_operator.changeEdge(mutant, hyper_params['layer'],
+                                        int(hyper_params['operator_params']['modal_prev']),
+                                        int(hyper_params['operator_params']['modal_curr']),
+                                        int(hyper_params['operator_params']['op_value']))
 
             elif hyper_params['operator_params']['operator'] == "block-edge":
-                den_operator.blockEdge(mutant,hyper_params['layer'],
-                                        int(hyper_params['operator_params']['modal_prev']),
-                                        int(hyper_params['operator_params']['modal_curr']))
+                den_operator.blockEdge(mutant, hyper_params['layer'],
+                                       int(hyper_params['operator_params']['modal_prev']),
+                                       int(hyper_params['operator_params']['modal_curr']))
 
             elif hyper_params['operator_params']['operator'] == "mul-inverse-edge":
-                den_operator.mul_inverse(mutant,hyper_params['layer'],
-                                        int(hyper_params['operator_params']['modal_prev']),
-                                        int(hyper_params['operator_params']['modal_curr']))
+                den_operator.mul_inverse(mutant, hyper_params['layer'],
+                                         int(hyper_params['operator_params']['modal_prev']),
+                                         int(hyper_params['operator_params']['modal_curr']))
 
             elif hyper_params['operator_params']['operator'] == "additive-inverse-edge":
-                den_operator.additive_inverse(mutant,hyper_params['layer'],
+                den_operator.additive_inverse(mutant, hyper_params['layer'],
+                                              int(hyper_params['operator_params']['modal_prev']),
+                                              int(hyper_params['operator_params']['modal_curr']))
+
+            elif hyper_params['operator_params']['operator'] == "invert-edge":
+                den_operator.invertEdge(mutant, hyper_params['layer'],
                                         int(hyper_params['operator_params']['modal_prev']),
                                         int(hyper_params['operator_params']['modal_curr']))
 
-            elif hyper_params['operator_params']['operator'] == "invert-edge":
-                den_operator.invertEdge(mutant,hyper_params['layer'],
-                                        int(hyper_params['operator_params']['modal_prev']),
-                                        int(hyper_params['operator_params']['modal_curr']))
+        elif hyper_params['operator_type'] == 'bias_level':
+            if hyper_params['operator_params']['operator'] == "change-bias-value":
+                bias_operator.changeBiasValue(mutant, hyper_params['layer'],
+                                              int(hyper_params['operator_params']['modal_kernel']),
+                                              int(hyper_params['operator_params']['op_value']))
+
 
         # Get Accuracies of Model
         prediction1 = model.predict(testing_data[i])
         counters1 = pa.getConfusionMatrix(prediction1, testing_data_labels[i])
-        matrices_original = pa.getAllMetrics(counters1,1.5)
+        matrices_original = pa.getAllMetrics(counters1, 1.5)
 
         # Also store locally for further calculations
         accuracy_model.append(pa.getModelAccuracy(counters1))
@@ -177,11 +189,10 @@ def train_all_models(projectId, training_data, training_data_labels, testing_dat
         # Get Accuracies of Mutant
         prediction2 = mutant.predict(testing_data[i])
         counters2 = pa.getConfusionMatrix(prediction2, testing_data_labels[i])
-        matrices_mutant = pa.getAllMetrics(counters2,1.5)
+        matrices_mutant = pa.getAllMetrics(counters2, 1.5)
 
         # Also store locally for further calculations
         accuracy_mutant.append(pa.getModelAccuracy(counters2))
-
 
         # Insert models into database
         # Insert the new model into the database
@@ -192,10 +203,12 @@ def train_all_models(projectId, training_data, training_data_labels, testing_dat
                                    RETURNING id """,
                     (projectId, "Original Model",
                      "Original Model",
-                     model_bytes, json.dumps([{str(k): {str(inner_k): inner_v for inner_k, inner_v in v.items()}} for k, v in matrices_original.items()]), datetime.utcnow(), datetime.utcnow(),)
+                     model_bytes, json.dumps(
+                        [{str(k): {str(inner_k): inner_v for inner_k, inner_v in v.items()}} for k, v in
+                         matrices_original.items()]), datetime.utcnow(), datetime.utcnow(),)
                     )
         new_model_id = cur.fetchone()[0]
-        del(model_bytes)
+        del (model_bytes)
 
         model_bytes = pickle.dumps(mutant)
         cur.execute("""
@@ -204,15 +217,15 @@ def train_all_models(projectId, training_data, training_data_labels, testing_dat
                                            RETURNING id """,
                     (new_model_id, f"Mutant-{new_model_id}",
                      f"Mutated Model with effect of {hyper_params['operator_params']['operator']}",
-                     model_bytes,  json.dumps([{str(k): {str(inner_k): inner_v for inner_k, inner_v in v.items()}} for k, v in matrices_mutant.items()]), datetime.utcnow(), datetime.utcnow(),)
+                     model_bytes, json.dumps(
+                        [{str(k): {str(inner_k): inner_v for inner_k, inner_v in v.items()}} for k, v in
+                         matrices_mutant.items()]), datetime.utcnow(), datetime.utcnow(),)
                     )
-
 
         print(new_model_id)
         conn.commit()
-        del(model)
-        del(mutant)
-
+        del (model)
+        del (mutant)
     return accuracy_model, accuracy_mutant
 
 
@@ -221,7 +234,8 @@ def mutation_killing(projectId, hyper_params):
     training_data, training_data_labels, testing_data, testing_data_labels = create_samples(hyper_params['k_value'])
 
     # Then we train models for all those samples
-    accuracy_model, accuracy_mutant = train_all_models(projectId, training_data, training_data_labels, testing_data, testing_data_labels, hyper_params)
+    accuracy_model, accuracy_mutant = train_all_models(projectId, training_data, training_data_labels, testing_data,
+                                                       testing_data_labels, hyper_params)
     """
     # Then we Got Accuracies for all the models and mutants
     accuracy_model, accuracy_mutant = get_accuracies(hyper_params['k_value'], testing_data, testing_data_labels)    
@@ -234,7 +248,7 @@ def mutation_killing(projectId, hyper_params):
     d = (np.mean(accuracy_model) - np.mean(accuracy_mutant)) / \
         np.sqrt(((len(accuracy_model) - 1) * np.var(accuracy_model, ddof=1) +
                  (len(accuracy_mutant) - 1) * np.var(accuracy_mutant, ddof=1)) / (
-                    len(accuracy_model) + len(accuracy_mutant) - 2))
+                        len(accuracy_model) + len(accuracy_mutant) - 2))
 
     # Now to compute beta using the TTestIndPower
     alpha = 0.05
@@ -244,10 +258,18 @@ def mutation_killing(projectId, hyper_params):
 
     beta = power_analysis.solve_power(effect_size=d, nobs1=nobs1, alpha=alpha, ratio=ratio)
 
+    # Definition of Mutation Killing as per the paper:
+    # An Empirical Evaluation of Mutation Operators for Deep Learning Systems
+
+    killed = False
+    if d >= 0.2 and p_value < 0.05:
+        killed = True
+
     results = {
         'P-Value': p_value,
         'Beta': beta,
         'Effect Size': d,
+        'Mutation': killed,
         'status': "Successfully executed"
     }
 

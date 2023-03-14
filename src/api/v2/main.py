@@ -20,6 +20,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".
 
 from mutation_operators import NeuronLevel
 from mutation_operators import WeightLevel
+from mutation_operators import BiasLevel
 from operator_utils import WeightUtils
 from operator_utils import Model_layers
 import predictions_analysis as pa
@@ -42,6 +43,7 @@ layers = Model_layers()
 weights = WeightUtils()
 NeuronOperator = NeuronLevel()
 EdgeOperator = WeightLevel()
+BiasOperator = BiasLevel()
 
 # Constructor for safe load of object coming from database
 def int_constructor(loader, node):
@@ -354,6 +356,16 @@ def get_neuron_layers(modelId: str):
     layer_names = layers.getNeuronLayers(model_var)
     return json.dumps(layer_names)
 
+
+# GET request to retrieve all the layers on which Bias level Mutation Operators are applicable
+@app.get("/bias_layers/{modelId}")
+def get_bias_layers(modelId: str):
+    # Get the model object from the dictionary
+    model_var = model_dict.get(modelId)
+    layer_names = layers.getBiasLayers(model_var)
+    return json.dumps(layer_names)
+
+
 # GET request to retrieve all the layers on which Edge level Mutation Operators are applicable
 @app.get("/edge-layers/{modelId}")
 def get_edge_layers(modelId: str):
@@ -374,6 +386,15 @@ def get_weights_temp(modelId: str, layerName: str):
     model_var = model_dict.get(modelId)
     trainable_weights = weights.GetWeights(model_var, layerName)
     result = trainable_weights.tolist()
+    return jt.dumps(result)
+
+# GET request to retrieve all the trainable weights of a layers in a specific model
+@app.get("/bias-weights/{modelId}/{layerName}")
+def get_bias_temp(modelId: str, layerName: str):
+    # Get the model object from the dictionary
+    model_var = model_dict.get(modelId)
+    bias_weights = weights.getBiasWeights(model_var, layerName)
+    result = bias_weights.tolist()
     return jt.dumps(result)
 
 
@@ -418,7 +439,6 @@ def getAllKernelWeights_temp(modelId: str, layerName: str):
     for kernel in range(total):
         kernel_weights.append(weights.getKernelWeights(trainable_weights, kernel))
     return jt.dumps(kernel_weights)
-
 
 
 
@@ -537,6 +557,8 @@ def getMutationOperatorsList(operatortype: int):
         return json.dumps(NeuronLevel.neuronLevelMutationOperatorshash)
     elif operatortype == 2:
         return json.dumps(WeightLevel.weightLevelMutationOperatorsList)
+    elif operatortype == 3:
+        return json.dumps(BiasLevel.biasLevelMutationOperatorhash)
     else:
         raise HTTPException(status_code=500, detail=("Invalid Operator Type"))
 
@@ -549,6 +571,8 @@ def getMutationOperatorsDescription(operatortype: int):
         return jt.dumps(NeuronLevel.neuronLevelMutationOperatorsDescription)
     elif operatortype == 2:
         return jt.dumps(WeightLevel.weightLevelMutationOperatorsDescription)
+    elif operatortype == 3:
+        return jt.dumps(BiasLevel.biasLevelMutationOperatorDescription)
     else:
         raise HTTPException(status_code=500, detail=("Invalid Operator Type"))
 
@@ -562,6 +586,49 @@ def get_model_image(modelId: str):
     image.save("../../supporting files/model.png")
     with open("../../supporting files/model.png", "rb") as f:
         return Response(content=f.read(), media_type="image/png")
+
+# PUT request to change neuron value using Change Neuron Mutation Operator
+@app.put("/change-bias/{tableName}/{modelId}/{secondId}/{layerName}/{kernel}/{value}")
+def change_bias(tableName: str, modelId: int, secondId: int, layerName: str, kernel: int, value: Union[float,None],
+                  response: Response):
+    # Select the model bytes from the database
+    if tableName == 'original_models':
+        query = "SELECT file FROM {} WHERE id = %s and project_id = %s".format(tableName)
+    elif tableName == 'mutated_models':
+        query = "SELECT file FROM {} WHERE id = %s and original_model_id = %s".format(tableName)
+    else:
+        raise HTTPException(status_code=404, detail="Table not found")
+    cur.execute(query,(modelId, secondId,))
+    model_bytes = cur.fetchone()[0]
+    if not model_bytes:
+        raise HTTPException(status_code=404, detail="Model not found")
+    # Load the model from the bytes
+    model = pickle.loads(model_bytes)
+
+    # Create a deep copy of the model
+    mutant = models.clone_model(model)
+    mutant.set_weights(model.get_weights())
+
+    try:
+        BiasOperator.changeBiasValue(mutant,layerName,kernel,value)
+        model_bytes = pickle.dumps(mutant)
+
+        # Insert the new model into the database
+        cur.execute("""
+                    INSERT INTO mutated_models (original_model_id, name, description, file, created_at, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    RETURNING id """,
+                    (modelId, f"mutant-{modelId}",
+                    f"Mutated Model with the effect of Change Bias at"
+                    f" Layer: {layerName}, kernel {kernel}",
+                    model_bytes, datetime.utcnow(), datetime.utcnow())
+                    )
+        new_model_id = cur.fetchone()[0]
+
+        response.status_code = 200
+        return {"message": "Neuron value successfully changed", "mutated_model_id": new_model_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # PUT request to change neuron value using Change Neuron Mutation Operator

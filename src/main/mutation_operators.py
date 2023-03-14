@@ -1,6 +1,18 @@
 from tensorflow import keras
 from operator_utils import WeightUtils
 
+class BiasLevel:
+    # Composition
+    weights = WeightUtils()
+    biasLevelMutationOperatorhash = {"change-bias-value": "change Bias Value"}
+    biasLevelMutationOperatorDescription = ["Change Bias Value (CBV) Changes bias value such that the effect on the subsequent neuron is changed"]
+
+    def changeBiasValue(self, model, layerName, index, value):
+        trainable_weights = self.weights.GetWeights(model, layerName)
+        trainable_weights[1][index] = value
+        self.weights.SetWeights(model, layerName, trainable_weights)
+        print("value of bias from kernel number ", index, " successfully changed")
+
 class NeuronLevel:
     # Composition
     weights = WeightUtils()

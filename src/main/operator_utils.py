@@ -53,6 +53,14 @@ class WeightUtils:
 
         return kernel_weights
 
+    def getBiasWeights(self, model, layerName):
+        bias_weights = np.array([])
+        for layer in model.layers:
+            if layer.name == layerName:
+                bias_weights = np.array(layer.get_weights(), dtype=object)[1]
+        return bias_weights
+
+
 
 class Model_layers:
     def find_sameshape_layer(self, model):
@@ -96,6 +104,13 @@ class Model_layers:
         layer_names = []
         for layer in model.layers:
             if layer.name.startswith('dense'):
+                layer_names.append(layer.name)
+        return layer_names
+
+    def getBiasLayers(self,model):
+        layer_names = []
+        for layer in model.layers:
+            if layer.name.startswith('dense') or layer.name.startswith('conv'):
                 layer_names.append(layer.name)
         return layer_names
 
