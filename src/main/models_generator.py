@@ -36,7 +36,7 @@ class Lenet5Generator:
                       metrics=['accuracy'])
         return model
 
-    def train_moel(self, model):
+    def train_model(self, model):
         # Load Data
         (train_X, train_y), (test_X, test_y) = mnist.load_data()
         # Convert into Numpy Arrays

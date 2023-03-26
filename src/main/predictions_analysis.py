@@ -105,7 +105,10 @@ def getSpecificity(counters):
     for class_label, class_counters in counters.items():
         tn = class_counters['tn']
         fp = class_counters['fp']
-        specificity[class_label] = "{:.4f}".format(tn / (tn + fp))
+        if tn+fp == 0:
+            specificity[class_label] = 0
+        else:
+            specificity[class_label] = "{:.4f}".format(tn / (tn + fp))
     return specificity
 
 
@@ -114,7 +117,10 @@ def getSensitivity(counters):
     for class_label, class_counters in counters.items():
         tp = class_counters['tp']
         fn = class_counters['fn']
-        sensitivity[class_label] = "{:.4f}".format(tp / (tp + fn))
+        if tp+fn == 0:
+            sensitivity[class_label] = 0
+        else:
+            sensitivity[class_label] = "{:.4f}".format(tp / (tp + fn))
     return sensitivity
 
 def getPrecision(counters):
@@ -122,7 +128,10 @@ def getPrecision(counters):
     for class_label, class_counters in counters.items():
         tp = class_counters['tp']
         fp = class_counters['fp']
-        precision[class_label] = "{:.4f}".format(tp / (tp + fp))
+        if tp+fp == 0:
+            precision[class_label] = 0
+        else:
+            precision[class_label] = "{:.4f}".format(tp / (tp + fp))
     return precision
 
 def getRecall(counters):
@@ -130,7 +139,10 @@ def getRecall(counters):
     for class_label, class_counters in counters.items():
         tp = class_counters['tp']
         fn = class_counters['fn']
-        recall[class_label] = "{:.4f}".format(tp / (tp + fn))
+        if tp+fn == 0:
+            recall[class_label] = 0
+        else:
+            recall[class_label] = "{:.4f}".format(tp / (tp + fn))
     return recall
 
 def getF1Score(counters):
@@ -151,7 +163,10 @@ def getAuc(counters):
         tn = class_counters['tn']
         fp = class_counters['fp']
         fn = class_counters['fn']
-        auc[class_label] = "{:.4f}".format((tp / (tp + fn)) - (fp / (fp + tn)))
+        if tp+fn == 0 or fp+tn == 0:
+            auc[class_label] = 0
+        else:
+            auc[class_label] = "{:.4f}".format((tp / (tp + fn)) - (fp / (fp + tn)))
     return auc
 
 def getFBetaScore(counters, beta):

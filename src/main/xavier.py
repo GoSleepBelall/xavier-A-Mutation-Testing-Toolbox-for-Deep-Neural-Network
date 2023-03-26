@@ -44,7 +44,7 @@ if __name__ == '__main__':
     layers = Model_layers()
     weights = WeightUtils()
     convOperator = NeuronLevel()
-    denseOperator = EdgeLevel()
+    denseOperator = WeightLevel()
     VK = VisualKeras()
 
     # Visualization Demo
