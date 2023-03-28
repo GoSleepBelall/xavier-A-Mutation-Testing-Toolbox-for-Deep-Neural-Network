@@ -2,15 +2,11 @@ from mutation_operators import NeuronLevel
 from mutation_operators import WeightLevel
 from visualizer import VisualKeras
 import predictions_analysis as pa
-from models_generator import Lenet5Generator
 from operator_utils import WeightUtils
 from operator_utils import Model_layers
 import tensorflow as tf
 from tensorflow.keras.datasets import mnist
-from tensorflow import keras
 import numpy as np
-from tensorflow.keras.optimizers import Adam
-#import pg_adapter
 
 
 

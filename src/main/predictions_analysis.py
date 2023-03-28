@@ -1,7 +1,3 @@
-from operator_utils import WeightUtils
-import tensorflow as tf
-from tensorflow.keras.datasets import mnist
-from tensorflow import keras
 import numpy as np
 from keras.utils import np_utils
 from sklearn.metrics import classification_report
@@ -96,7 +92,10 @@ def getAccuracy(counters):
         tn = class_counters['tn']
         fp = class_counters['fp']
         fn = class_counters['fn']
-        accuracy[class_label] = "{:.4f}".format((tp + tn) / (tp + tn + fp + fn))
+        if tp+tn+fp+fn == 0:
+            accuracy[class_label] = 0
+        else:
+            accuracy[class_label] = "{:.4f}".format((tp + tn) / (tp + tn + fp + fn))
     return accuracy
 
 

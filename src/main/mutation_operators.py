@@ -1,5 +1,4 @@
-from tensorflow import keras
-from operator_utils import WeightUtils
+from src.main.operator_utils import WeightUtils
 
 class BiasLevel:
     # Composition
