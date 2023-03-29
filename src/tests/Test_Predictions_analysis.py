@@ -1,12 +1,12 @@
 import unittest
 import src.main.predictions_analysis as pa
-"""
-def test_get(self):
-        
-        expected_output = 
-        
-        self.assertEqual(pa(self.counters), expected_output)
-"""
+
+import os
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "main")))
+
+
 class TestPredictionsAnalysis(unittest.TestCase):
 
     def setUp(self):

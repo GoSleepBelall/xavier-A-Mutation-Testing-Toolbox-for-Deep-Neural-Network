@@ -4,8 +4,12 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
 import numpy as np
 import tensorflow.keras.backend as K
 
+import os
+import sys
 
-from src.main.operator_utils import Model_layers
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "main")))
+
+from operator_utils import Model_layers
 
 class TestModelLayers(unittest.TestCase):
 
