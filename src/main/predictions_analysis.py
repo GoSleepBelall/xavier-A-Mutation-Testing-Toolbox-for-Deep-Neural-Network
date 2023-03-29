@@ -194,8 +194,19 @@ def getModelAccuracy(counters):
         total += class_counters['tp'] + class_counters['tn'] + class_counters['fp'] + class_counters['fn']
     return (tp_sum + tn_sum) / total
 
+def getModelPrecision(counters):
+    tp_sum = 0
+    fp_sum = 0
+    for class_label, class_counters in counters.items():
+        tp_sum += class_counters['tp']
+        fp_sum += class_counters['fp']
+    if tp_sum == 0 and fp_sum == 0:
+        return 0.0
+    else:
+        return tp_sum / (tp_sum + fp_sum)
+
 def getAllMetrics(counters, beta):
-    results = {}
+    results = {'accuracy': getModelAccuracy(counters), 'precision': getModelPrecision(counters)}
     accuracy = getAccuracy(counters)
     specificity = getSpecificity(counters)
     sensitivity = getSensitivity(counters)
@@ -206,6 +217,7 @@ def getAllMetrics(counters, beta):
     f_beta = getFBetaScore(counters, beta)
     #for class_label in range(10):
     class_results = {
+        'overall metrices': results,
         'accuracy': accuracy,
         'specificity': specificity,
         'sensitivity': sensitivity,
