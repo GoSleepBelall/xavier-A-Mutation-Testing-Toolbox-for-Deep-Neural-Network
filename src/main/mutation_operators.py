@@ -1,16 +1,38 @@
-from src.main.operator_utils import WeightUtils
+from operator_utils import WeightUtils
 
 class BiasLevel:
     # Composition
     weights = WeightUtils()
-    biasLevelMutationOperatorhash = {"change-bias-value": "change Bias Value"}
-    biasLevelMutationOperatorDescription = ["Change Bias Value (CBV) Changes bias value such that the effect on the subsequent neuron is changed"]
+    biasLevelMutationOperatorhash = {"change-bias-value": "Change Bias Value",
+                                     "block-bias-value": "Block Bias Value",
+                                     "mul-inverse-bias-value": "Multiplicative Inverse Bias Value",
+                                     "additive-inverse-bias-value": "Additive Inverse Bias Value"}
+    biasLevelMutationOperatorDescription = ["Change Bias Value (CBV) Changes bias value such that the effect on"
+                                            " the subsequent neuron is changed"]
 
     def changeBiasValue(self, model, layerName, index, value):
         trainable_weights = self.weights.GetWeights(model, layerName)
         trainable_weights[1][index] = value
         self.weights.SetWeights(model, layerName, trainable_weights)
         print("value of bias from kernel number ", index, " successfully changed")
+
+    def blockBiasValue(self, model, layerName, index):
+        trainable_weights = self.weights.GetWeights(model, layerName)
+        trainable_weights[1][index] = 0             # Block Effect
+        self.weights.SetWeights(model, layerName, trainable_weights)
+        print("value of bias from kernel number ", index, " successfully blocked")
+
+    def mulInverseBiasValue(self, model, layerName, index):
+        trainable_weights = self.weights.GetWeights(model, layerName)
+        trainable_weights[1][index] = float(1/trainable_weights[1][index])              # Multiplicative Inverse
+        self.weights.SetWeights(model, layerName, trainable_weights)
+        print("value of bias from kernel number ", index, " successfully Inversed")
+
+    def additiveInverseBiasValue(self, model, layerName, index):
+        trainable_weights = self.weights.GetWeights(model, layerName)
+        trainable_weights[1][index] = 0 - (trainable_weights[1][index])                  # Additive Inverse
+        self.weights.SetWeights(model, layerName, trainable_weights)
+        print("value of bias from kernel number ", index, " successfully Inverted")
 
 class NeuronLevel:
     # Composition
@@ -32,7 +54,7 @@ class NeuronLevel:
 
     def blockNeuron(self, model, layerName, row, column, kernel):
         trainable_weights = self.weights.GetWeights(model, layerName)
-        trainable_weights[0][row][column][0][kernel] = 0                       #Block Effect
+        trainable_weights[0][row][column][0][kernel] = 0                       # Block Effect
         self.weights.SetWeights(model,layerName, trainable_weights)
         print("value of neuron from kernel number ", kernel, " at row ", row, " and column ", column, " is blocked")
 

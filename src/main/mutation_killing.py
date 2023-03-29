@@ -177,6 +177,17 @@ def train_all_models(projectId, training_data, training_data_labels, testing_dat
                                               int(hyper_params['operator_params']['modal_kernel']),
                                               int(hyper_params['operator_params']['op_value']))
 
+            elif hyper_params['operator_params']['operator'] == "block-bias-value":
+                bias_operator.blockBiasValue(mutant, hyper_params['layer'],
+                                             int(hyper_params['operator_params']['modal_kernel']))
+
+            elif hyper_params['operator_params']['operator'] == "mul-inverse-bias-value":
+                bias_operator.blockBiasValue(mutant, hyper_params['layer'],
+                                             int(hyper_params['operator_params']['modal_kernel']))
+
+            elif hyper_params['operator_params']['operator'] == "additive-inverse-bias-value":
+                bias_operator.blockBiasValue(mutant, hyper_params['layer'],
+                                             int(hyper_params['operator_params']['modal_kernel']))
 
         # Get Accuracies of Model
         prediction1 = model.predict(testing_data[i])
