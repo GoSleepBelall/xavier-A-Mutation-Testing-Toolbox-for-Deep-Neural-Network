@@ -206,7 +206,8 @@ def getModelPrecision(counters):
         return tp_sum / (tp_sum + fp_sum)
 
 def getAllMetrics(counters, beta):
-    results = {'accuracy': getModelAccuracy(counters), 'precision': getModelPrecision(counters)}
+    overall_accuracy = {'accuracy': getModelAccuracy(counters)}
+    overall_precision = {'precision': getModelPrecision(counters)}
     accuracy = getAccuracy(counters)
     specificity = getSpecificity(counters)
     sensitivity = getSensitivity(counters)
@@ -217,7 +218,8 @@ def getAllMetrics(counters, beta):
     f_beta = getFBetaScore(counters, beta)
     #for class_label in range(10):
     class_results = {
-        'overall metrices': results,
+        'overall_accuracy': overall_accuracy,
+        'overall_precision': overall_precision,
         'accuracy': accuracy,
         'specificity': specificity,
         'sensitivity': sensitivity,
