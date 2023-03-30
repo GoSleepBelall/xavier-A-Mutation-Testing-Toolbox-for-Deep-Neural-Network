@@ -82,48 +82,56 @@ class TestMutationOperators(unittest.TestCase):
             op = WeightLevel()
             w = WeightUtils()
 
+            initial_weights = w.GetWeights(self.model, 'dense')
             op.mul_inverse(self.model, 'dense', 0, 0)
             final_weights = w.GetWeights(self.model, 'dense')
-            np.testing.assert_allclose(float(1/final_weights[0][0][0]), 0, atol=0.49)
+            np.testing.assert_allclose(float(1/initial_weights[0][0][0]), final_weights[0][0][0], atol=0.1)
 
+            initial_weights = w.GetWeights(self.model, 'dense_1')
             op.mul_inverse(self.model, 'dense_1', 0, 0)
             final_weights = w.GetWeights(self.model, 'dense_1')
-            np.testing.assert_allclose(float(1/final_weights[0][0][0]), 0, atol=0.49)
+            np.testing.assert_allclose(float(1/initial_weights[0][0][0]), final_weights[0][0][0], atol=0.1)
 
+            initial_weights = w.GetWeights(self.model, 'dense_2')
             op.mul_inverse(self.model, 'dense_2', 0, 8)
             final_weights = w.GetWeights(self.model, 'dense_2')
-            np.testing.assert_allclose(float(1/final_weights[0][0][8]), 0,atol=0.49)
+            np.testing.assert_allclose(float(1/initial_weights[0][0][8]), final_weights[0][0][8], atol=0.1)
+
 
     def test_additive_inverse_edge(self):
                 op = WeightLevel()
                 w = WeightUtils()
 
+                initial_weights = w.GetWeights(self.model, 'dense')
                 op.additive_inverse(self.model, 'dense', 0, 0)
                 final_weights = w.GetWeights(self.model, 'dense')
-                np.testing.assert_allclose(float(0 - final_weights[0][0][0]), 0, atol=0.49)
+                np.testing.assert_allclose(float(0 - initial_weights[0][0][0]), final_weights[0][0][0], atol=0.1)
 
+                initial_weights = w.GetWeights(self.model, 'dense_1')
                 op.additive_inverse(self.model, 'dense_1', 0, 0)
                 final_weights = w.GetWeights(self.model, 'dense_1')
-                np.testing.assert_allclose(float(0 - final_weights[0][0][0]), 0, atol=0.49)
+                np.testing.assert_allclose(float(0 - initial_weights[0][0][0]), final_weights[0][0][0], atol=0.1)
 
+                initial_weights = w.GetWeights(self.model, 'dense_2')
                 op.additive_inverse(self.model, 'dense_2', 0, 8)
                 final_weights = w.GetWeights(self.model, 'dense_2')
-                np.testing.assert_allclose(float(0 - final_weights[0][0][8]), 0, atol =0.49)
+                np.testing.assert_allclose(float(0 - initial_weights[0][0][8]), final_weights[0][0][8], atol =0.1)
 
     def test_blockNeuron(self):
         op = NeuronLevel()
         w = WeightUtils()
         op.blockNeuron(self.model, 'conv2d', 0, 0, 0)
         final_weights = w.GetWeights(self.model, 'conv2d')
-        np.testing.assert_allclose(0, final_weights[0][0][0][0][0], atol = 0.49)
+        np.testing.assert_allclose(0, final_weights[0][0][0][0][0], atol = 0.1)
 
         op.blockNeuron(self.model, 'conv2d_1', 2, 3, 1)
-        final_weights = w.GetWeights(self.model, 'conv2d')
-        np.testing.assert_allclose(0, final_weights[0][2][3][0][1], atol=0.49)
+        final_weights = w.GetWeights(self.model, 'conv2d_1')
+        np.testing.assert_allclose(0, final_weights[0][2][3][0][1], atol=0.1)
 
     def test_mul_inverse(self):
         op = NeuronLevel()
         w = WeightUtils()
+
         initial_weights = w.GetWeights(self.model, 'conv2d')
         op.mul_inverse(self.model, 'conv2d', 2, 3, 1)
         final_weights = w.GetWeights(self.model, 'conv2d')
