@@ -10,6 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "m
 
 from mutation_operators import NeuronLevel
 from mutation_operators import WeightLevel
+from mutation_operators import BiasLevel
 from operator_utils import WeightUtils
 
 class TestMutationOperators(unittest.TestCase):
@@ -154,6 +155,24 @@ class TestMutationOperators(unittest.TestCase):
         op.additive_inverse(self.model, 'conv2d_1', 1, 1, 1)
         final_weights = w.GetWeights(self.model, 'conv2d_1')
         np.testing.assert_allclose(float(0 - initial_weights[0][1][1][0][1]), final_weights[0][1][1][0][1], rtol=1)
+
+    def test_changeBiasValue(self):
+        op = BiasLevel()
+        w = WeightUtils()
+        op.changeBiasValue(self.model, 'conv2d', 2, 99)
+        final_weights = w.GetWeights(self.model, 'conv2d')
+        np.testing.assert_allclose(final_weights[1][2], 99, rtol=1)
+
+        op.changeBiasValue(self.model, 'conv2d_1', 3, 12)
+        final_weights = w.GetWeights(self.model, 'conv2d')
+        np.testing.assert_allclose(final_weights[1][3], 12, rtol=1)
+
+        op.changeBiasValue(self.model, 'conv2d', 0, 10)
+        final_weights = w.GetWeights(self.model, 'conv2d')
+        np.testing.assert_allclose(final_weights[1][0], 10, rtol=1)
+
+
+
 
 if __name__ == '__main__':
     unittest.main()
