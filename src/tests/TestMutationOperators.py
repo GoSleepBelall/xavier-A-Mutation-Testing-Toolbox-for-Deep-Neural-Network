@@ -204,8 +204,24 @@ class TestMutationOperators(unittest.TestCase):
         final_weights = w.GetWeights(self.model, 'conv2d_1')
         np.testing.assert_allclose(float(1 / initial_weights[1][13]), final_weights[1][13], atol=0.1)
 
+    def test_additiveInverseBiasValue(self):
+        op = BiasLevel()
+        w = WeightUtils()
 
- 
+        initial_weights = w.GetWeights(self.model, 'conv2d')
+        op.additiveInverseBiasValue(self.model, 'conv2d', 3)
+        final_weights = w.GetWeights(self.model, 'conv2d')
+        np.testing.assert_allclose(float(0 - initial_weights[1][3]), final_weights[1][3], atol=0.1)
+
+        initial_weights = w.GetWeights(self.model, 'conv2d_1')
+        op.additiveInverseBiasValue(self.model, 'conv2d_1', 3)
+        final_weights = w.GetWeights(self.model, 'conv2d_1')
+        np.testing.assert_allclose(float(0 - initial_weights[1][3]), final_weights[1][3], atol=0.1)
+
+        initial_weights = w.GetWeights(self.model, 'conv2d')
+        op.additiveInverseBiasValue(self.model, 'conv2d', 2)
+        final_weights = w.GetWeights(self.model, 'conv2d')
+        np.testing.assert_allclose(float(0 - initial_weights[1][2]), final_weights[1][2], atol=0.1)
 
 
 if __name__ == '__main__':
