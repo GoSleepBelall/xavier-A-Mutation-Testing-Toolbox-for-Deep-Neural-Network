@@ -171,6 +171,22 @@ class TestMutationOperators(unittest.TestCase):
         final_weights = w.GetWeights(self.model, 'conv2d')
         np.testing.assert_allclose(final_weights[1][0], 10, rtol=1)
 
+    def test_blockBiasValue(self):
+        op = BiasLevel()
+        w = WeightUtils()
+        op.blockBiasValue(self.model, 'conv2d', 2)
+        final_weights = w.GetWeights(self.model, 'conv2d')
+        np.testing.assert_allclose(final_weights[1][2], 0, rtol=1)
+
+        op.blockBiasValue(self.model, 'conv2d', 3)
+        final_weights = w.GetWeights(self.model, 'conv2d')
+        np.testing.assert_allclose(final_weights[1][3], 0, rtol=1)
+
+        op.blockBiasValue(self.model, 'conv2d_1', 2)
+        final_weights = w.GetWeights(self.model, 'conv2d_1')
+        np.testing.assert_allclose(final_weights[1][2], 0, rtol=1)
+
+
 
 
 
