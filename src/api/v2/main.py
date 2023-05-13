@@ -61,6 +61,34 @@ yaml.SafeLoader.add_constructor('tag:yaml.org,2002:int', int_constructor)
 conn = PgAdapter.get_instance().connection
 cur = conn.cursor()
 
+@app.get("/mutation_score/projects/{projectId:path}")
+def mutation_score(projectId: str):
+    flag =1
+    k = 0
+    isKilled = 0
+    allProjectIds = [v for v in projectId.split('/')]
+    for x in allProjectIds:
+        cur.execute("SELECT * FROM PROJECTS where id = %s", (x,))
+        result = cur.fetchone()
+        if not result:
+            raise HTTPException(status_code=404, detail="Project Not Found")
+        hyper_params = yaml.safe_load(result[4])
+        print(hyper_params)
+        if flag:
+            k = hyper_params['k_value']
+            print("k value", k)
+            flag = False
+        if hyper_params['k_value'] != k:
+            raise HTTPException(status_code=400, detail="Your K Values for projects are not equal")
+        temp = result[8]
+        print(temp)
+        mutation = temp['Mutation']
+        if mutation == True:
+            isKilled+=1
+
+    score = float(isKilled/len(allProjectIds))
+    return json.dumps(score)
+
 
 @app.get("/run/{projectId}")
 def run(projectId: int):
