@@ -464,6 +464,13 @@ def get_bias_layers(modelId: str):
     layer_names = layers.getBiasLayers(model_var)
     return json.dumps(layer_names)
 
+# GET request to retrieve all the layers on which Walking Neuron Mutation Operators are applicable
+@app.get("/walking_neuron_layers/{modelId}")
+def get_bias_layers(modelId: str):
+    # Get the model object from the dictionary
+    model_var = model_dict.get(modelId)
+    layer_names = layers.getWalkingLayers(model_var)
+    return json.dumps(layer_names)
 
 # GET request to retrieve all the layers on which Edge level Mutation Operators are applicable
 @app.get("/edge-layers/{modelId}")

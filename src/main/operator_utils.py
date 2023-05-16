@@ -114,6 +114,13 @@ class Model_layers:
                 layer_names.append(layer.name)
         return layer_names
 
+    def getWalkingLayers(self, model):
+        layer_names = []
+        for layer in model.layers:
+            if layer.name.startswith('dense'):
+                layer_names.append(layer.name)
+        return layer_names
+
 """
 Additional Information: (DO NOT REMOVE)
 We can also import custom_objects while loading model as dictionary
