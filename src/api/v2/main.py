@@ -157,6 +157,7 @@ def mutation_score(projectId: str):
             isKilled+=1
 
     score = float(isKilled/len(allProjectIds))
+    score *= 100
     return json.dumps(score)
 
 
