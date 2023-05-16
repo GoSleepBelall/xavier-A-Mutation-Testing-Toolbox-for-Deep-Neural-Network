@@ -14,6 +14,8 @@ import numpy as np
 import yaml
 import visualkeras as vk
 import pickle
+import copy
+
 
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "main")))
@@ -21,11 +23,13 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".
 from mutation_operators import NeuronLevel
 from mutation_operators import WeightLevel
 from mutation_operators import BiasLevel
+from mutation_operators import WalkingNeuron
 from operator_utils import WeightUtils
 from operator_utils import Model_layers
 import predictions_analysis as pa
 from pg_adapter import PgAdapter
 import mutation_killing as mk
+from models_generator import Lenet5Generator
 
 
 app = FastAPI(title="XAVIER-API", description="A Mutation Testing Toolbox.", version="2.0")
@@ -44,6 +48,8 @@ weights = WeightUtils()
 NeuronOperator = NeuronLevel()
 EdgeOperator = WeightLevel()
 BiasOperator = BiasLevel()
+Walking = WalkingNeuron()
+LenetGenerator = Lenet5Generator()
 
 # Constructor for safe load of object coming from database
 def int_constructor(loader, node):
@@ -56,10 +62,74 @@ def int_constructor(loader, node):
 yaml.SafeLoader.add_constructor('tag:yaml.org,2002:int', int_constructor)
 
 # Dataset for Lenet
-(train_X, train_y), (test_X, test_y) = mnist.load_data()
+#(train_X, train_y), (test_X, test_y) = mnist.load_data()
 
 conn = PgAdapter.get_instance().connection
 cur = conn.cursor()
+
+
+@app.get("/walking-neuron/{projectId}/{layerName}/{currNeuron}")
+def walkingNeuron(projectId, layerName, currNeuron):
+    model = LenetGenerator.generate_model()
+    # Load Data
+    (train_X, train_y), (test_X, test_y) = mnist.load_data()
+    # Convert into Numpy Arrays
+    train_X = np.asarray(train_X)
+    train_y = np.asarray(train_y)
+    model.fit(x=train_X, y=train_y, epochs=1)
+
+    # Get Accuracies of Model
+    prediction1 = model.predict(test_X)
+    counters1 = pa.getConfusionMatrix(prediction1, test_y)
+    matrices_original = pa.getAllMetrics(counters1, 1.5)
+    print("Original model created and evaluated successfully")
+
+    # Save the original model in database
+    model_bytes = pickle.dumps(model)
+    cur.execute("""
+                   INSERT INTO original_models (project_id, name, description, file, matrices,created_at, updated_at)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s)
+                   RETURNING id """,
+                (projectId, "Original Model",
+                 "Original Model",
+                 model_bytes, json.dumps(
+                    [{str(k): {str(inner_k): inner_v for inner_k, inner_v in v.items()}} for k, v in
+                     matrices_original.items()]), datetime.utcnow(), datetime.utcnow(),)
+                )
+    print("Model inserted in Database")
+    # Fetch Original Model Id
+    new_model_id = cur.fetchone()[0]
+    print("The new model id is ", new_model_id)
+    trainable_weights = weights.GetWeights(model, layerName)
+    total_neurons = trainable_weights[0].shape[1]
+    for i in range(total_neurons):
+        if i != int(currNeuron):
+            # Create a deep copy of the model
+            mutant = copy.deepcopy(model)
+            Walking.replaceNeuron(mutant, layerName, int(currNeuron), i)
+            print("Mutation operator completed successfully: ", i)
+            # Get Accuracies of Mutant
+            prediction2 = mutant.predict(test_X)
+            counters2 = pa.getConfusionMatrix(prediction2, test_y)
+            matrices_mutant = pa.getAllMetrics(counters2, 1.5)
+            del (model_bytes)
+
+            model_bytes = pickle.dumps(mutant)
+            cur.execute("""
+                                                       INSERT INTO mutated_models (original_model_id, name, description, file, matrices,created_at, updated_at)
+                                                       VALUES (%s, %s, %s, %s, %s, %s, %s)
+                                                       RETURNING id """,
+                        (new_model_id, f"Mutant-{new_model_id}",
+                         f"Mutated Model with effect of Walking Neuron at layer {layerName} with destination neuron {i}",
+                         model_bytes, json.dumps(
+                            [{str(k): {str(inner_k): inner_v for inner_k, inner_v in v.items()}} for k, v in
+                             matrices_mutant.items()]), datetime.utcnow(), datetime.utcnow(),)
+                        )
+
+            print(new_model_id)
+            conn.commit()
+
+    return {"message": "Project Successfully Completed"}
 
 @app.get("/mutation_score/projects/{projectId:path}")
 def mutation_score(projectId: str):

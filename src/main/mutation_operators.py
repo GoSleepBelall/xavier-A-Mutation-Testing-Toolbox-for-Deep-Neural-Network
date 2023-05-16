@@ -1,4 +1,5 @@
 from operator_utils import WeightUtils
+import copy
 
 class BiasLevel:
     # Composition
@@ -123,3 +124,16 @@ class WeightLevel:
             trainable_weights[0][prevNeuron][currNeuron] = abs(trainable_weights[0][prevNeuron][currNeuron])
         self.weights.SetWeights(model, layerName, trainable_weights)
         print("value of edge from Neuron # ", prevNeuron, " that joins to Neuron #", currNeuron, " in layer", layerName, "  is inverted")
+
+class WalkingNeuron:
+    weights = WeightUtils()
+    def replaceNeuron(self, model, layerName, currNeuron, destNeuron):
+        trainable_weights = self.weights.GetWeights(model, layerName)
+        # Get the weights of the current neuron
+        currNeuron_weights = trainable_weights[0][:, currNeuron]
+        # Replace the weights of the destination neuron with the weights of the current neuron
+        trainable_weights[0][:, destNeuron] = currNeuron_weights
+        # Set the modified weights back to the model
+        self.weights.SetWeights(model, layerName, trainable_weights)
+        print("Weights of neuron #", currNeuron, " successfully copied to neuron #", destNeuron, " in layer", layerName)
+
